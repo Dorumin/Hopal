@@ -1,22 +1,12 @@
-const { HEROKU, SYSTEMD } = require('../../../util/config.js');
 const { spawn } = require('child_process');
 const got = require('got');
 const OPCommand = require('../structs/OPCommand.js');
-const DatabasePlugin = require('../../db');
 
 class RestartCommand extends OPCommand {
-    static get deps() {
-        return (HEROKU == 'true' || SYSTEMD) ? [
-            DatabasePlugin
-        ] : [];
-    }
-
     constructor(bot) {
         super(bot);
         this.aliases = ['restart', 'r'];
         this.hidden = true;
-        this.heroku = this.bot._globalConfig.HEROKU == 'true';
-        this.systemd = this.bot._globalConfig.SYSTEMD;
 
         this.shortdesc = `Restarts the bot.`;
         this.desc = `
@@ -31,35 +21,8 @@ class RestartCommand extends OPCommand {
     async call(message) {
         const channelId = message.channel.id;
         await message.channel.send('Restarting...');
-        if (this.heroku) {
-            await this.restartHeroku(channelId);
-        } else if (this.systemd) {
-            await this.restartSystemd(channelId);
-        } else {
-            this.restartProc(channelId);
-        }
-    }
 
-    async restartHeroku(channelId) {
-        // TODO: Make db writes return usable promises
-        await this.bot.db.set('lastRestartChannel', channelId);
-        const config = this.bot._globalConfig;
-        const name = config.IS_BACKUP ? config.BACKUP_APP_NAME : config.APP_NAME;
-        const token = config.HEROKU_TOKEN;
-
-        const app = await got(`https://api.heroku.com/teams/apps/${name}`, {
-            headers: {
-                Accept: `application/vnd.heroku+json; version=3`,
-                Authorization: `Bearer ${token}`
-            }
-        }).json();
-
-        await got.delete(`https://api.heroku.com/apps/${app.id}/dynos`, {
-            headers: {
-                Accept: `application/vnd.heroku+json; version=3`,
-                Authorization: `Bearer ${token}`
-            }
-        });
+        this.restartProc(channelId);
     }
 
     restartProc(channelId) {
@@ -76,11 +39,6 @@ class RestartCommand extends OPCommand {
         subprocess.unref();
 
         process.exit(0);
-    }
-
-    async restartSystemd(channelId) {
-        await this.bot.db.set('lastRestartChannel', channelId);
-        process.exit(1);
     }
 }
 

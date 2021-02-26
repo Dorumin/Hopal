@@ -8,7 +8,7 @@ class Twinkle {
         this.client = new Discord.Client({
             disableMentions: 'everyone'
         });
-        this.config = config.TWINKLE;
+        this.config = config.Hopal;
         this.operators = this.config.OPERATORS;
         this._globalConfig = config;
         this._loggedIn = false;
@@ -33,8 +33,9 @@ class Twinkle {
     }
 
     loadPluginDir(dir) {
-        const wl = this.config.PLUGINS.WHITELIST;
-        const bl = this.config.PLUGINS.BLACKLIST;
+        const plugins = this.config.PLUGINS || {};
+        const wl = plugins.WHITELIST;
+        const bl = plugins.BLACKLIST;
         fs.readdirSync(dir).forEach(file => {
             const p = path.join(dir, file);
             if (wl instanceof Array && !wl.includes(file)) {

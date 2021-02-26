@@ -19,7 +19,7 @@ class LoggerPlugin extends Plugin {
 class Logger {
     constructor(bot) {
         this.bot = bot;
-        this.config = bot.config.LOGGER;
+        this.config = bot.config.LOGGER || {};
         this.writers = new Cache();
         this.logPath = path.join(this.climb(__dirname, 3), 'log');
 

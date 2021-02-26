@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const path = require('path');
-const Twinkle = require('./src/Twinkle.js');
-const client = new Twinkle();
+const Hopal = require('./src/Hopal.js');
+const client = new Hopal();
 
 client.loadPluginDir(path.join(__dirname, 'src', 'plugins'));
 

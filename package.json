@@ -1,24 +1,24 @@
 {
-  "name": "twinklebot",
+  "name": "hopal-bot",
   "version": "0.0.1",
-  "description": "Fandom Developers Discord bot",
+  "description": "Hopal for Opal",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Dorumin/Twinkle.git"
+    "url": "git+https://github.com/GameModerator/Hopal.git"
   },
   "author": "Doru",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Dorumin/Twinkle/issues"
+    "url": "https://github.com/GameModerator/Hopal/issues"
   },
   "engines": {
     "node": ">=12.14.1"
   },
-  "homepage": "https://github.com/Dorumin/Twinkle#readme",
+  "homepage": "https://github.com/GameModerator/Hopal#readme",
   "dependencies": {
     "clean-stack": "2.2.0",
     "confusables": "^1.0.0",

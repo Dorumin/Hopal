@@ -5,14 +5,12 @@ const Plugin = require('../../structs/Plugin.js');
 const Collection = require('../../structs/Collection.js');
 const Cache = require('../../structs/Cache.js');
 const LoggerPlugin = require('../logger');
-const DatabasePlugin = require('../db');
 const FormatterPlugin = require('../fmt');
 
 class CommanderPlugin extends Plugin {
     static get deps() {
         return [
             LoggerPlugin,
-            DatabasePlugin,
             FormatterPlugin,
         ];
     }
@@ -191,9 +189,9 @@ class Commander {
     }
 
     async getPrefixes(guild) {
-        const prefixes = guild
-            ? await this.bot.db.get(`commander.prefixes.${guild.id}`, this.prefixes)
-            : this.prefixes;
+        const prefixes = guild && this.prefixes.hasOwnProperty(guild.id)
+            ? this.prefixes[guild.id]
+            : this.prefixes.DEFAULT;
 
         if (this.config.MENTION) {
             const id = this.bot.client.user.id;
