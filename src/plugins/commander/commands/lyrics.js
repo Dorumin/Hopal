@@ -1,8 +1,15 @@
 const got = require('got');
 const cheerio = require('cheerio');
 const Command = require('../structs/Command.js');
+const FormatterPlugin = require('../../fmt');
 
 class LyricsCommand extends Command {
+    static get deps() {
+        return [
+            FormatterPlugin
+        ];
+    }
+
     constructor(bot) {
         super(bot);
         this.aliases = ['lyrics', 'l'];
@@ -15,120 +22,210 @@ class LyricsCommand extends Command {
         ];
     }
 
-    call(message) {
-        message.channel.send(`fancy embed`)
+    async call(message, content) {
+        let search = content;
+
+        if (!search) {
+            const spotify = message.author.presence.activities
+                .find(activity =>
+                    activity.name === 'Spotify' &&
+                    activity.type === 'LISTENING'
+                );
+
+            if (spotify) {
+                const {
+                    details: title,
+                    state: artist
+                } = spotify;
+
+                search = `${title} ${artist}`;
+            } else {
+                message.channel.send('Supply a search query.');
+                return;
+            }
+        }
+
+        const songs = await this.searchGenius(search);
+
+        if (songs.length === 0) {
+            message.channel.send('No matching songs found.');
+            return;
+        }
+
+        const song = songs[0];
+
+        const data = await this.fetchSongData(song);
+        const chunked = this.chunkLyrics(data.lyrics);
+
+        const title = this.bot.fmt.bold(data.title);
+        const artist = this.bot.fmt.bold(data.artist);
+
+        for (let i = 0; i < chunked.length; i++) {
+            const first = i === 0;
+            const last = i === chunked.length - 1;
+
+            await message.channel.send({
+                embed: {
+                    url: data.url,
+                    title: this.only(first,
+                        `Song lyrics for ${title} by ${artist}!`),
+                    thumbnail: this.only(first, {
+                        url: data.thumb
+                    }),
+                    description: chunked[i].join('\n'),
+                    footer: this.only(last, {
+                        text: `Just for you, ${this.nameOf(message)}`,
+                        icon_url: message.author.avatarURL({
+                            format: 'png',
+                            dynamic: true,
+                            size: 32
+                        })
+                    })
+                }
+            });
+        }
+    }
+
+    nameOf(message) {
+        return message.member.nickname || message.author.username;
+    }
+
+    only(cond, value) {
+        if (cond) {
+            return value;
+        } else {
+            return undefined;
+        }
+    }
+
+    async fetchSongData(song) {
+        const lyrics = await this.fetchSongLyrics(song);
+        const url = `https://genius.com${song.result.path}`;
+        const title = song.result.title;
+        const artist = song.result.primary_artist.name;
+        const thumb = song.result.song_art_image_thumbnail_url;
+
+        return {
+            url,
+            title,
+            artist,
+            thumb,
+            lyrics
+        };
+    }
+
+    async fetchSongLyrics(song) {
+        const html = await got(`https://genius.com${song.result.path}`).text();
+        const extracted = this.extractSongLyrics(html);
+
+        return this.formatLyrics(extracted);
+    }
+
+    extractSongLyrics(html) {
+        const $ = cheerio.load(html);
+
+        const $simple = $('.lyrics p');
+
+        if ($simple.length !== 0) {
+            return $simple.text();
+        }
+
+        // Genius has decided to make it hard on us
+        // global.$ = $;
+
+        const $fucky = $('[class^="Lyrics__Container"]');
+
+        let cumulative = '';
+
+        function traverse(tree) {
+            for (const node of tree.childNodes) {
+                if (node.type === 'tag') {
+                    traverse(node);
+                } else if (node.type === 'text') {
+                    cumulative += $(node).text();
+                }
+            }
+        }
+
+        $fucky.each((_, elem) => {
+            $(elem).find('br').replaceWith('\n');
+
+            traverse(elem);
+        });
+
+        return cumulative;
+    }
+
+    async searchGenius(query) {
+        const json = await got(`https://genius.com/api/search/song`, {
+            searchParams: {
+                page: 1,
+                q: query
+            }
+        }).json();
+
+        const lowerQuery = query.toLowerCase();
+
+        const songs = json.response.sections[0].hits.sort((a, b) => {
+            const same1 = a.result.title.toLowerCase() == lowerQuery;
+            const same2 = b.result.title.toLowerCase() == lowerQuery;
+
+            if (same1 === same2) {
+                // Both match, return most viewed
+                return b.result.stats.pageviews - a.result.stats.pageviews;
+            }
+
+            if (same1) return -1;
+            if (same2) return 1;
+
+            return 0;
+        });
+
+        return songs;
+    }
+
+    chunkLyrics(lyrics) {
+        return this.chunkTextBlocks(lyrics.split('\n'), 1, 2048);
+    }
+
+    // Function used to join blocks of text
+    // arr  - Array of the blocks of text, usually lines
+    // jump - the overhead for each block of text returned together
+    // max  - the max length of each text, accounting for all previous jumps
+    //        but not the next
+    chunkTextBlocks(arr, jump, max) {
+        const chunks = [];
+        let len = 0;
+        let current = 0;
+
+        chunks[current] = [];
+        for (let i = 0; i < arr.length; i++) {
+            const item = arr[i];
+            if (len + item.length > max) {
+                len = 0;
+                current++;
+                chunks[current] = [];
+            }
+
+            len += item.length + jump;
+            chunks[current].push(item);
+        }
+
+        return chunks;
+    }
+
+    // Cleans up lyrics, removing block types like verse/bridge/chorus,
+    // and then removes any triple+ newlines left over
+    formatLyrics(lyrics) {
+        const split = lyrics.split('\n')
+            .map(line => line.trim())
+            .filter(line => !line.startsWith('['));
+
+        return split.join('\n')
+            .replace(/\n{2,}/g, '\n\n')
+            .replace(/\*/g, '\\*')
+            .trim();
     }
 }
 
 module.exports = LyricsCommand;
-
-function chunk(arr, overhead = 0, jump = 1, max = 2000) {
-    const chunks = [];
-    let len = overhead,
-    current = 0;
-
-    chunks[current] = [];
-    for (let i = 0; i < arr.length; i++) {
-        const item = arr[i];
-        if (len + item.length > max) {
-            len = 0;
-            current++;
-            chunks[current] = [];
-        }
-
-        len += item.length + jump;
-        chunks[current].push(item);
-    }
-
-    return chunks;
-}
-
-function formatLyrics(lyrics) {
-    const split = lyrics.split('\n').map(line => line.trim()).filter(line => !line.startsWith('['));
-
-    return split.join('\n').replace(/\n{2,}/g, '\n\n').replace(/\*/g, '\\*').trim();
-}
-
-// module.exports = (OpalBot) => {
-//     const out = {};
-
-//     out.peasants = {};
-//     out.peasants.l = 'lyrics';
-//     out.peasants.lyrics = async (message, content, lang) => {
-//         if (!content) {
-//             const storage = OpalBot.storage.music = OpalBot.storage.music || {},
-//             controller = storage[message.guild.id];
-
-//             if (controller) {
-//                 const current = controller.currentVideo();
-//                 if (current) {
-//                     content = current.query;
-//                 }
-//             }
-
-//             if (!content && message.member.presence.game.name == 'Spotify') {
-//                 content = [message.member.presence.game.details, message.member.presence.game.state].filter(Boolean).join(' ');
-//             }
-
-//             if (!content) {
-//                 message.channel.send(OpalBot.i18n.msg('no-content', 'lyrics', lang));
-//                 return;
-//             }
-//         }
-
-//         const res = await got(`https://genius.com/api/search/song?page=1&q=${encodeURIComponent(content)}`, {
-//             json: true
-//         });
-//         const songs = res.body.response.sections[0].hits
-//             .sort((a, b) => {
-//                 var same1 = a.result.title.toLowerCase() == content.toLowerCase(),
-//                 same2 = b.result.title.toLowerCase() == content.toLowerCase();
-
-//                 if (same1 == same2) return b.result.stats.pageviews - a.result.stats.pageviews;
-
-//                 if (same1) return -1;
-//                 if (same2) return 1;
-//             });
-
-//         const song = songs[0];
-
-//         if (!song) {
-//             message.channel.send(OpalBot.i18n.msg('not-found', 'lyrics', content, lang));
-//             return;
-//         }
-
-//         const lyricsRes = await got(`https://genius.com${song.result.path}`);
-//         const $ = cheerio.load(lyricsRes.body);
-//         const title = song.result.title;
-//         const artist = song.result.primary_artist.name;
-//         const thumb = song.result.song_art_image_thumbnail_url;
-//         const lyrics = formatLyrics($('.lyrics p').first().text());
-//         const split = chunk(lyrics.split('\n'), 10, 1, 2000);
-
-//         for (let i = 0; i < split.length; i++) {
-//             await message.channel.send({
-//                 embed: {
-//                     color: OpalBot.color,
-//                     url: `https://genius.com${song.result.path}`,
-//                     title: i == 0
-//                         ? OpalBot.i18n.msg('for', 'lyrics', title, artist, lang)
-//                         : undefined,
-//                     thumbnail: i == 0
-//                         ? {
-//                             url: thumb,
-//                         }
-//                         : undefined,
-//                     description: split[i].join('\n'),
-//                     footer: i == split.length - 1
-//                         ? {
-//                             text: OpalBot.i18n.msg('footer', 'lyrics', message.member.nickname || message.author.username, lang),
-//                             icon_url: message.author.displayAvatarURL
-//                         }
-//                         : undefined
-//                 }
-//             });
-//         }
-//     };
-
-//     return out;
-// };

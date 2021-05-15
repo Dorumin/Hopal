@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/GameModerator/Hopal#readme",
   "dependencies": {
+    "cheerio": "^1.0.0-rc.9",
     "clean-stack": "2.2.0",
     "confusables": "^1.0.0",
     "diff": "^4.0.2",

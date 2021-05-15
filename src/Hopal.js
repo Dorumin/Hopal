@@ -3,12 +3,12 @@ const path = require('path');
 const Discord = require('discord.js');
 const config = require('./util/config.js');
 
-class Twinkle {
+class Hopal {
     constructor()  {
         this.client = new Discord.Client({
             disableMentions: 'everyone'
         });
-        this.config = config.Hopal;
+        this.config = config.HOPAL;
         this.operators = this.config.OPERATORS;
         this._globalConfig = config;
         this._loggedIn = false;
@@ -65,4 +65,4 @@ class Twinkle {
     }
 }
 
-module.exports = Twinkle;
+module.exports = Hopal;
