@@ -47,6 +47,8 @@ class AutoHentai {
 
     async startPosting(id, channel) {
         while (true) {
+            await this.wait(channel.INTERVAL * 1000);
+
             const post = await this.getRandom(channel);
 
             if (post !== null) {
@@ -85,8 +87,6 @@ class AutoHentai {
                     channel.send(post.url);
                 }
             }
-
-            await this.wait(channel.INTERVAL * 1000);
         }
     }
 
@@ -211,7 +211,7 @@ class AutoHentai {
                 s: 'post',
                 q: 'index',
                 tags: searchTags.join(' '),
-                limit: 50,
+                limit: 10,
                 // pid: offset,
                 ...this.credentials
             }
