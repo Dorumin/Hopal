@@ -27,7 +27,7 @@ class LyricsCommand extends Command {
         const target = mentionedMembers.size > 0
             ? mentionedMembers.first()
             : message.member;
-        let search = content;
+        let search = content.replace(/<@!?\d+>/, '');
 
         if (!search) {
             const spotify = target.user.presence.activities
