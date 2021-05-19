@@ -17,7 +17,7 @@ class AutoHentai {
         this.credentials = this.config.API || {};
 
         this.searches = new Map();
-        this.tags = new Cache();
+        // this.tags = new Cache();
 
         this.lastId = this.fetchLastId();
 
@@ -212,6 +212,7 @@ class AutoHentai {
         // Only save n-th indexed results
         // Maybe add +1 offset each time it happens
         // Or have a set of "sent" image ids per tag
+        // Update: Actually I added a countermeasure by too-close ids below
         const xml = await got(`https://gelbooru.com/index.php`, {
             searchParams: {
                 page: 'dapi',
@@ -225,7 +226,7 @@ class AutoHentai {
         }).text();
         const document = parse(xml);
 
-        const posts = document.querySelectorAll('post')
+        let posts = document.querySelectorAll('post')
             .map(postTag => {
                 const attrs = this.getAttrs(postTag);
                 const tags = attrs.tags.split(' ')
@@ -236,7 +237,7 @@ class AutoHentai {
                     tag: tag,
                     tags: tags,
                     searchTags: searchTags,
-                    id: attrs.id,
+                    id: Number(attrs.id),
                     isVideo: tags.includes('webm'),
                     url: attrs.file_url,
                     rating: attrs.rating,
@@ -249,6 +250,24 @@ class AutoHentai {
                 `Error: ${xml} | Offset: ${offset} | Tag: ${tag}`
             ];
         }
+
+        let lastId = posts[0].id;
+
+        posts = posts.filter(post => {
+            if (post.id === lastId) {
+                return true;
+            }
+
+            // Too close for comfort; probably a series
+            if (lastId - post.id < 4) {
+                console.log('Skipped', post.id, lastId);
+                lastId = post.id;
+                return false;
+            }
+
+            lastId = post.id;
+            return true;
+        });
 
         return posts;
     }
