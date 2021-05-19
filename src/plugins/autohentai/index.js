@@ -156,7 +156,7 @@ class AutoHentai {
                 page: 'dapi',
                 s: 'post',
                 q: 'index',
-                tags: tag,
+                tags: tags.join(' '),
                 limit: 50,
                 pid: offset,
                 ...this.credentials
