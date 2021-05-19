@@ -19,7 +19,6 @@ class AutoHentai {
         this.searches = new Map();
         this.tags = new Cache();
 
-
         this.bot.client.on('ready', this.start.bind(this));
     }
 
@@ -147,6 +146,10 @@ class AutoHentai {
     async fetchPosts(tag) {
         const tagInfo = await this.tags.get(tag, () => this.fetchTag(tag));
         const offset = this.getOffset(tagInfo.count);
+
+        const tags = tag.split(' ');
+
+        tags.push('-rating:safe');
 
         const xml = await got(`https://gelbooru.com/index.php`, {
             searchParams: {
