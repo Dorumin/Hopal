@@ -23,10 +23,14 @@ class LyricsCommand extends Command {
     }
 
     async call(message, content) {
+        const mentionedUsers = message.mentions.users;
+        const target = mentionedUsers.size > 0
+            ? mentionedUsers.first()
+            : message.author;
         let search = content;
 
         if (!search) {
-            const spotify = message.author.presence.activities
+            const spotify = target.presence.activities
                 .find(activity =>
                     activity.name === 'Spotify' &&
                     activity.type === 'LISTENING'
@@ -75,7 +79,7 @@ class LyricsCommand extends Command {
                     description: chunked[i].join('\n'),
                     footer: this.only(last, {
                         text: `Just for you, ${this.nameOf(message)}`,
-                        icon_url: message.author.avatarURL({
+                        icon_url: target.avatarURL({
                             format: 'png',
                             dynamic: true,
                             size: 32
