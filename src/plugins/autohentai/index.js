@@ -60,7 +60,8 @@ class AutoHentai {
                     const embed = {
                         title: post.tag,
                         url: `https://gelbooru.com/index.php?page=post&s=view&id=${post.id}&tags=${post.tag}`,
-                        description: post.searchTags.join(' '),
+                        // Enabled while testing
+                        // description: post.searchTags.join(' '),
                         footer: {
                             text: `Score: ${post.score} | ${this.getRating(post.rating)}`
                         }
@@ -140,35 +141,35 @@ class AutoHentai {
         return Number(this.getAttrs(post).id);
     }
 
-    async fetchTag(tag) {
-        const xml = await got(`https://gelbooru.com/index.php`, {
-            searchParams: {
-                page: 'dapi',
-                s: 'post',
-                q: 'index',
-                tags: tag,
-                limit: 1,
-                ...this.credentials
-            }
-        }).text();
-        const document = parse(xml);
+    // async fetchTag(tag) {
+    //     const xml = await got(`https://gelbooru.com/index.php`, {
+    //         searchParams: {
+    //             page: 'dapi',
+    //             s: 'post',
+    //             q: 'index',
+    //             tags: tag,
+    //             limit: 1,
+    //             ...this.credentials
+    //         }
+    //     }).text();
+    //     const document = parse(xml);
 
-        const posts = document.querySelector('posts');
+    //     const posts = document.querySelector('posts');
 
-        if (!posts) return {
-            count: 0
-        };
+    //     if (!posts) return {
+    //         count: 0
+    //     };
 
-        return {
-            count: Number(posts.attributes.count)
-        };
-    }
+    //     return {
+    //         count: Number(posts.attributes.count)
+    //     };
+    // }
 
-    getOffset(count) {
-        const max = Math.min(count, 400);
+    // getOffset(count) {
+    //     const max = Math.min(count, 400);
 
-        return Math.floor(Math.random() * max / 42) * 42;
-    }
+    //     return Math.floor(Math.random() * max / 42) * 42;
+    // }
 
     async getRandomStartId() {
         const lastId = await this.lastId;
@@ -189,6 +190,8 @@ class AutoHentai {
 
     async fetchPosts(tag, channel) {
         // `pid` offset is limited, instead we use id:< randomization
+        // Otherwise we run into "too deep" too easily
+
         // const tagInfo = await this.tags.get(tag, () => this.fetchTag(tag));
         // const offset = this.getOffset(tagInfo.count);
 
@@ -205,13 +208,17 @@ class AutoHentai {
             }
         }
 
+        // TODO: Avoid series by stepping over 10 in the results
+        // Only save n-th indexed results
+        // Maybe add +1 offset each time it happens
+        // Or have a set of "sent" image ids per tag
         const xml = await got(`https://gelbooru.com/index.php`, {
             searchParams: {
                 page: 'dapi',
                 s: 'post',
                 q: 'index',
                 tags: searchTags.join(' '),
-                limit: 10,
+                limit: 100,
                 // pid: offset,
                 ...this.credentials
             }
