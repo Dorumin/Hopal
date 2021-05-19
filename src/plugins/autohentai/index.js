@@ -19,6 +19,8 @@ class AutoHentai {
         this.searches = new Map();
         this.tags = new Cache();
 
+        this.lastId = this.fetchLastId();
+
         this.bot.client.on('ready', this.start.bind(this));
     }
 
@@ -45,7 +47,7 @@ class AutoHentai {
 
     async startPosting(id, channel) {
         while (true) {
-            const post = await this.getRandom(channel.TAGS);
+            const post = await this.getRandom(channel);
 
             if (post !== null) {
                 let message;
@@ -56,6 +58,7 @@ class AutoHentai {
                     const embed = {
                         title: post.tag,
                         url: `https://gelbooru.com/index.php?page=post&s=view&id=${post.id}&tags=${post.tag}`,
+                        description: post.searchTags.join(' '),
                         footer: {
                             text: `Score: ${post.score} | ${this.getRating(post.rating)}`
                         }
@@ -87,13 +90,14 @@ class AutoHentai {
         }
     }
 
-    async getRandom(tags) {
+    async getRandom(channel) {
+        const tags = channel.TAGS;
         const tag = tags[Math.floor(Math.random() * tags.length)];
 
-        return await this.fetchRandom(tag);
+        return await this.fetchRandom(tag, channel);
     }
 
-    async fetchRandom(tag) {
+    async fetchRandom(tag, channel) {
         const cached = this.searches.get(tag);
 
         if (cached && cached.length !== 0) {
@@ -102,7 +106,7 @@ class AutoHentai {
             return randomPost;
         }
 
-        const posts = await this.fetchPosts(tag);
+        const posts = await this.fetchPosts(tag, channel);
 
         this.searches.set(tag, posts);
 
@@ -111,6 +115,29 @@ class AutoHentai {
         }
 
         return posts.pop();
+    }
+
+    async fetchLastId() {
+        const xml = await got(`https://gelbooru.com/index.php`, {
+            searchParams: {
+                page: 'dapi',
+                s: 'post',
+                q: 'index',
+                tags: '1girl',
+                limit: 1,
+                ...this.credentials
+            }
+        }).text();
+        const document = parse(xml);
+
+        const post = document.querySelector('post');
+
+        if (!post) {
+            // Hardcoded
+            return 6116785;
+        }
+
+        return Number(this.getAttrs(post).id);
     }
 
     async fetchTag(tag) {
@@ -143,22 +170,49 @@ class AutoHentai {
         return Math.floor(Math.random() * max / 42) * 42;
     }
 
-    async fetchPosts(tag) {
-        const tagInfo = await this.tags.get(tag, () => this.fetchTag(tag));
-        const offset = this.getOffset(tagInfo.count);
+    async getRandomStartId() {
+        const lastId = await this.lastId;
 
-        const tags = tag.split(' ');
+        // Random number from 0 to `lastId`
+        return Math.floor(Math.random() * lastId);
+    }
 
-        tags.push('-rating:safe');
+    getAttrs(element) {
+        const attrs = {};
+
+        for (const match of element.rawAttrs.matchAll(/(\w+)="([^"]+)"/g)) {
+            attrs[match[1]] = match[2];
+        }
+
+        return attrs;
+    }
+
+    async fetchPosts(tag, channel) {
+        // `pid` offset is limited, instead we use id:< randomization
+        // const tagInfo = await this.tags.get(tag, () => this.fetchTag(tag));
+        // const offset = this.getOffset(tagInfo.count);
+
+        const startId = await this.getRandomStartId();
+
+        const searchTags = tag.split(' ');
+
+        searchTags.push(`id:<${startId}`);
+        searchTags.push('-rating:safe');
+
+        if (channel.BLACKLIST) {
+            for (const tag of channel.BLACKLIST) {
+                searchTags.push(`-${tag}`);
+            }
+        }
 
         const xml = await got(`https://gelbooru.com/index.php`, {
             searchParams: {
                 page: 'dapi',
                 s: 'post',
                 q: 'index',
-                tags: tags.join(' '),
+                tags: searchTags.join(' '),
                 limit: 50,
-                pid: offset,
+                // pid: offset,
                 ...this.credentials
             }
         }).text();
@@ -166,17 +220,15 @@ class AutoHentai {
 
         const posts = document.querySelectorAll('post')
             .map(postTag => {
-                const attrs = {};
-
-                for (const match of postTag.rawAttrs.matchAll(/(\w+)="([^"]+)"/g)) {
-                    attrs[match[1]] = match[2];
-                }
-
-                const tags = attrs.tags.split(' ').map(tag => tag.trim()).filter(Boolean);
+                const attrs = this.getAttrs(postTag);
+                const tags = attrs.tags.split(' ')
+                    .map(tag => tag.trim())
+                    .filter(Boolean);
 
                 return {
                     tag: tag,
                     tags: tags,
+                    searchTags: searchTags,
                     id: attrs.id,
                     isVideo: tags.includes('webm'),
                     url: attrs.file_url,
