@@ -226,18 +226,30 @@ class AutoHentai {
         }).text();
         const document = parse(xml);
 
+        // TODO: Maybe some tag metadata fetching to only filter same-author
+        let lastId;
         let posts = document.querySelectorAll('post')
             .map(postTag => {
                 const attrs = this.getAttrs(postTag);
+                const id = Number(attrs.id);
                 const tags = attrs.tags.split(' ')
                     .map(tag => tag.trim())
                     .filter(Boolean);
 
+                let skipped = false;
+
+                if (lastId !== undefined && lastId - id < 4) {
+                    skipped = lastId - id;
+                }
+
+                lastId = id;
+
                 return {
-                    tag: tag,
-                    tags: tags,
-                    searchTags: searchTags,
-                    id: Number(attrs.id),
+                    tag,
+                    tags,
+                    id,
+                    searchTags,
+                    skipped,
                     isVideo: tags.includes('webm'),
                     url: attrs.file_url,
                     rating: attrs.rating,
@@ -251,25 +263,12 @@ class AutoHentai {
             ];
         }
 
-        let lastId = posts[0].id;
+        // console.log(
+        //     posts.map(post => `${post.url} - Skipped: ${post.skipped}`)
+        //         .join('\n')
+        // );
 
-        posts = posts.filter(post => {
-            if (post.id === lastId) {
-                return true;
-            }
-
-            // Too close for comfort; probably a series
-            if (lastId - post.id < 4) {
-                console.log('Skipped', post.id, lastId);
-                lastId = post.id;
-                return false;
-            }
-
-            lastId = post.id;
-            return true;
-        });
-
-        return posts;
+        return posts.filter(post => post.skipped === false);
     }
 }
 
