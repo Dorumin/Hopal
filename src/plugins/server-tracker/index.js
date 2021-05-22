@@ -75,8 +75,10 @@ class ServerTracker {
                     const matching = matches.every(s => server.name.includes(s));
                     const matchingCountry = !tracker.hasOwnProperty('COUNTRY') ||
                         tracker.COUNTRY == server.country;
+                    const matchingPassword = !tracker.hasOwnProperty('PASSWORD') ||
+                        tracker.PASSWORD == server.password;
 
-                    if (matching && matchingCountry) {
+                    if (matching && matchingCountry && matchingPassword) {
                         found = true;
                         serverData = server;
                         break;
