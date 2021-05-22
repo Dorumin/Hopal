@@ -76,7 +76,7 @@ class ServerTracker {
                     const matchingCountry = !tracker.hasOwnProperty('COUNTRY') ||
                         tracker.COUNTRY === server.country;
                     const matchingPassword = !tracker.hasOwnProperty('PASSWORD') ||
-                        tracker.PASSWORD === server.password;
+                        tracker.PASSWORD === server.passworded;
 
                     if (matching && matchingCountry && matchingPassword) {
                         found = true;
