@@ -66,6 +66,8 @@ class ServerTracker {
             const servers = await this.fetch();
 
             for (const tracker of this.tracking) {
+                if (tracker.DISABLED) continue;
+
                 const matches = tracker.MATCH;
                 const id = tracker.CHANNEL;
 
