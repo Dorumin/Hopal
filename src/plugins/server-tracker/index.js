@@ -171,6 +171,14 @@ class ServerTracker {
             tags.push('Outdated');
         }
 
+        if (server.pvp) {
+            tags.push('PvP');
+        }
+
+        if (server.official) {
+            tags.push('Klei');
+        }
+
         return {
             title: `:flag_${server.countryCode}: ${this.formatName(server.name)}`,
             color: this.getColor(event),
@@ -233,48 +241,57 @@ class ServerTracker {
         console.timeEnd('parsing');
 
         console.time('deserializing');
-        const servers = document.querySelectorAll('.list tr')
+        const servers = document.querySelectorAll('.list > tr')
             .map(row => {
-                const flag = row.querySelector('.flag-icon');
-                const country = flag && flag.attributes['data-tooltip'];
-                const countryCode = flag && flag.attributes['class'].split(' ')
+                const firstData = row.querySelector('td');
+
+                // Get name, no error checking
+                const name = firstData.querySelector('.fnm').text;
+
+                // Get country name and code
+                const flag = firstData.querySelector('.flag-icon');
+                const country = flag.getAttribute('data-tooltip');
+                const countryCode = flag.getAttribute('class').split(' ')
                     .pop()
                     .split('-')
                     .pop();
 
-                const fnm = row.querySelector('.fnm');
-                if (!fnm) {
-                    return null;
-                }
+                // Get platform: Steam, WeGame, PS4, more?
+                const platform = row.querySelector('.fpf').text;
 
-                const name = fnm.text;
-                if (!name) {
-                    return null;
-                }
-
+                // Get player count, fpy is also used to check for password1
                 const fpy = row.querySelector('.fpy');
-                const players = fpy && fpy.firstChild && fpy.firstChild.text;
+                const players = fpy.firstChild.text;
 
+                // Get gamemode (normal/endless) and current season
                 const mode = row.querySelector('.fmd').text;
                 const season = row.querySelector('.fss').text;
 
-                const icons = row.querySelectorAll('.mico');
-                const icon = icons[icons.length - 1];
-                const modded = icon && icon.text === 'settings';
-                const outdated = icon && icon.text === 'warning';
+                // Get some flags: modded, outdated, pvp, official, passworded
+                const icons = firstData.querySelectorAll('.mico');
+                const modded = icons.some(icon => icon.text === 'settings');
+                const outdated = icons.some(icon => icon.text === 'warning');
+                const pvp = icons.some(icon => icon.text === 'restaurant_menu');
+                const official = icons.some(icon => icon.text === 'check_circle');
+
+                // Player count can have a lock icon if it's passworded
+                const passworded = fpy.querySelector('.mico') !== null;
 
                 return {
                     country,
                     countryCode,
+                    platform,
                     players,
                     name,
                     mode,
                     season,
                     modded,
-                    outdated
+                    outdated,
+                    pvp,
+                    official,
+                    passworded
                 };
-            })
-            .filter(server => server !== null);
+            });
         console.timeEnd('deserializing');
 
         return servers;
