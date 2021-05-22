@@ -32,10 +32,33 @@ class ServerTracker {
         while (true) {
             // await this.wait(this.meta.INTERVAL * 1000);
 
+            await this.updateMeta();
+
             await this.doFetch();
 
             await this.wait(this.meta.INTERVAL * 1000);
         }
+    }
+
+    async updateMeta() {
+        const response = await got(`https://dstserverlist.appspot.com/`);
+
+        const cookies = response.headers['set-cookie']
+            .map(cookie => cookie.split(';')[0].split('='));
+        const sessionCookie = cookies
+            .find(([name]) => name === 'SESSION_ID');;
+
+        const html = response.body;
+        const document = parse(html);
+
+        const csrfName = document.querySelector('[name="csrf_name"]').attributes.content;
+        const csrfValue = document.querySelector('[name="csrf_value"]').attributes.content;
+
+        console.log(sessionCookie, csrfName, csrfValue);
+
+        this.meta.COOKIE = `${sessionCookie[0]}=${sessionCookie[1]}`;
+        this.meta.CSRF_KEY = csrfName;
+        this.meta.CSRF_VALUE = csrfValue;
     }
 
     async doFetch() {
