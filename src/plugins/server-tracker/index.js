@@ -54,7 +54,7 @@ class ServerTracker {
         const csrfName = document.querySelector('[name="csrf_name"]').attributes.content;
         const csrfValue = document.querySelector('[name="csrf_value"]').attributes.content;
 
-        console.log(sessionCookie, csrfName, csrfValue);
+        // console.log(sessionCookie, csrfName, csrfValue);
 
         this.meta.COOKIE = `${sessionCookie[0]}=${sessionCookie[1]}`;
         this.meta.CSRF_KEY = csrfName;
@@ -77,8 +77,6 @@ class ServerTracker {
                         tracker.COUNTRY == server.country;
 
                     if (matching && matchingCountry) {
-                        console.log(server.name);
-
                         found = true;
                         serverData = server;
                         break;
@@ -94,6 +92,12 @@ class ServerTracker {
                         });
 
                         this.status.set(id, serverData);
+                    } else {
+                        this.onEvent({
+                            event: 'UPDATE',
+                            server: serverData,
+                            tracker
+                        });
                     }
                 } else {
                     if (this.status.has(id)) {
@@ -113,15 +117,47 @@ class ServerTracker {
         }
     }
 
-    onEvent({ event, server, tracker }) {
+    async onEvent(data) {
+        const { event, server, tracker } = data;
+
         console.log({
             event,
-            server,
-            tracker
+            server
         });
+
+        if (event === 'UPDATE') {
+            const stored = this.status.get(tracker.CHANNEL);
+
+            if (stored.message) {
+                this.status.set(tracker.CHANNEL, {
+                    ...stored,
+                    ...server
+                });
+
+                await stored.message.edit({
+                    embed: this.buildEventEmbed('UP', server)
+                });
+            }
+
+            return;
+        }
 
         const channel = this.bot.client.channels.cache.get(tracker.CHANNEL);
 
+        if (channel) {
+            const message = await channel.send({
+                embed: this.buildEventEmbed(event, server)
+            });
+
+            const stored = this.status.get(tracker.CHANNEL);
+
+            if (stored) {
+                stored.message = message;
+            }
+        }
+    }
+
+    buildEventEmbed(event, server) {
         const tags = [
             server.season,
             server.mode
@@ -135,23 +171,21 @@ class ServerTracker {
             tags.push('Outdated');
         }
 
-        if (channel) {
-            channel.send({
-                embed: {
-                    title: `:flag_${server.countryCode}: ${this.formatName(server.name)}`,
-                    color: this.getColor(event),
-                    description: this.getStatus(event) + `\n` +
-                        `${server.players} players online`,
-                    footer: {
-                        text: tags.join(' | ')
-                    }
-                }
-            });
-        }
+        return {
+            title: `:flag_${server.countryCode}: ${this.formatName(server.name)}`,
+            color: this.getColor(event),
+            description: this.getStatus(event) + `\n` +
+                `${server.players} players online`,
+            footer: {
+                text: tags.join(' | ')
+            }
+        };
     }
 
     formatName(name) {
         return name
+            .replace(/󰀅/g, ':eyeball:')
+            .replace(/󰀯/g, ':wormhole:')
             .replace(/󰀈/g, ':fire:')
             .replace(/󰀉/g, ':ghost:')
             .replace(/󰀍/g, ':heart:')
@@ -242,10 +276,6 @@ class ServerTracker {
             })
             .filter(server => server !== null);
         console.timeEnd('deserializing');
-
-        // console.log(document.querySelectorAll('.list tr').length);
-        // console.log(servers.length);
-        // console.log(servers[0]);
 
         return servers;
     }
