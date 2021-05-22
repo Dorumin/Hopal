@@ -74,9 +74,9 @@ class ServerTracker {
                 for (const server of servers) {
                     const matching = matches.every(s => server.name.includes(s));
                     const matchingCountry = !tracker.hasOwnProperty('COUNTRY') ||
-                        tracker.COUNTRY == server.country;
+                        tracker.COUNTRY === server.country;
                     const matchingPassword = !tracker.hasOwnProperty('PASSWORD') ||
-                        tracker.PASSWORD == server.password;
+                        tracker.PASSWORD === server.password;
 
                     if (matching && matchingCountry && matchingPassword) {
                         found = true;
@@ -173,6 +173,10 @@ class ServerTracker {
             tags.push('Outdated');
         }
 
+        if (server.passworded) {
+            tags.push('Password');
+        }
+
         if (server.pvp) {
             tags.push('PvP');
         }
@@ -261,7 +265,7 @@ class ServerTracker {
                 // Get platform: Steam, WeGame, PS4, more?
                 const platform = row.querySelector('.fpf').text;
 
-                // Get player count, fpy is also used to check for password1
+                // Get player count, fpy is also used to check for password
                 const fpy = row.querySelector('.fpy');
                 const players = fpy.firstChild.text;
 
