@@ -138,12 +138,12 @@ class EvalCommand extends OPCommand {
         code = code.replace(/;+$/g, '').trim();
 
         const isAsync = code.includes('await');
-        const isSingleStatement = !code.includes(';') &&
-            !/\b(if|while|for|try)\b/.test(code);
+        const isExpression = !code.includes(';') &&
+            !/\b(if|while|for|try|const|let)\b/.test(code);
 
         if (isAsync) {
             code = `(async () => {
-                ${isSingleStatement ? 'return ' : ''}${code};
+                ${isExpression ? 'return ' : ''}${code};
             })()`;
         }
 
