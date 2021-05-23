@@ -33,7 +33,7 @@ class TranslateCommand extends Command {
     }
 
     async call(message, content) {
-        const { text, from, to } = message.mentions.length > 1
+        const { text, from, to } = message.mentions.size > 0
             ? this.extractData(this.getStatus(message.mentions.users.first().id))
             : this.extractData(content);
         
