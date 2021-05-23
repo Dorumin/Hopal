@@ -1,6 +1,13 @@
 const Command = require('../structs/Command.js');
+const FormatterPlugin = require('../../fmt');
 
 class PickCommand extends Command {
+    static get deps() {
+        return [
+            FormatterPlugin
+        ];
+    }
+
     constructor(bot) {
         super(bot);
         this.aliases = ['pick', 'choose', 'decide'];
@@ -12,11 +19,11 @@ class PickCommand extends Command {
         ];
     }
 
-    call(message, content) {
+    async call(message, content) {
         const split = content.split(';');
         const chosen =  split[Math.floor(Math.random() * split.length)].trim();
 
-        message.channel.send(`I pick **`${chosen}`**);
+        await message.channel.send(`I pick ${this.bot.fmt.bold(chosen)}`);
     }
 }
 
