@@ -135,7 +135,7 @@ class EvalCommand extends OPCommand {
         }
 
         // Strip any leading semicolons, this shouldn't break anything
-        code = code.replace(/;+$/g, '');
+        code = code.replace(/;+$/g, '').trim();
 
         const isAsync = code.includes('await');
         const isSingleStatement = !code.includes(';') &&
