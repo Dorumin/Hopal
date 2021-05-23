@@ -32,10 +32,33 @@ class ServerTracker {
         while (true) {
             // await this.wait(this.meta.INTERVAL * 1000);
 
+            await this.updateMeta();
+
             await this.doFetch();
 
             await this.wait(this.meta.INTERVAL * 1000);
         }
+    }
+
+    async updateMeta() {
+        const response = await got(`https://dstserverlist.appspot.com/`);
+
+        const cookies = response.headers['set-cookie']
+            .map(cookie => cookie.split(';')[0].split('='));
+        const sessionCookie = cookies
+            .find(([name]) => name === 'SESSION_ID');;
+
+        const html = response.body;
+        const document = parse(html);
+
+        const csrfName = document.querySelector('[name="csrf_name"]').attributes.content;
+        const csrfValue = document.querySelector('[name="csrf_value"]').attributes.content;
+
+        // console.log(sessionCookie, csrfName, csrfValue);
+
+        this.meta.COOKIE = `${sessionCookie[0]}=${sessionCookie[1]}`;
+        this.meta.CSRF_KEY = csrfName;
+        this.meta.CSRF_VALUE = csrfValue;
     }
 
     async doFetch() {
@@ -43,6 +66,8 @@ class ServerTracker {
             const servers = await this.fetch();
 
             for (const tracker of this.tracking) {
+                if (tracker.DISABLED) continue;
+
                 const matches = tracker.MATCH;
                 const id = tracker.CHANNEL;
 
@@ -51,11 +76,11 @@ class ServerTracker {
                 for (const server of servers) {
                     const matching = matches.every(s => server.name.includes(s));
                     const matchingCountry = !tracker.hasOwnProperty('COUNTRY') ||
-                        tracker.COUNTRY == server.country;
+                        tracker.COUNTRY === server.country;
+                    const matchingPassword = !tracker.hasOwnProperty('PASSWORD') ||
+                        tracker.PASSWORD === server.passworded;
 
-                    if (matching && matchingCountry) {
-                        console.log(server.name);
-
+                    if (matching && matchingCountry && matchingPassword) {
                         found = true;
                         serverData = server;
                         break;
@@ -71,6 +96,12 @@ class ServerTracker {
                         });
 
                         this.status.set(id, serverData);
+                    } else {
+                        this.onEvent({
+                            event: 'UPDATE',
+                            server: serverData,
+                            tracker
+                        });
                     }
                 } else {
                     if (this.status.has(id)) {
@@ -90,15 +121,47 @@ class ServerTracker {
         }
     }
 
-    onEvent({ event, server, tracker }) {
+    async onEvent(data) {
+        const { event, server, tracker } = data;
+
         console.log({
             event,
-            server,
-            tracker
+            server
         });
+
+        if (event === 'UPDATE') {
+            const stored = this.status.get(tracker.CHANNEL);
+
+            if (stored.message) {
+                this.status.set(tracker.CHANNEL, {
+                    ...stored,
+                    ...server
+                });
+
+                await stored.message.edit({
+                    embed: this.buildEventEmbed('UP', server)
+                });
+            }
+
+            return;
+        }
 
         const channel = this.bot.client.channels.cache.get(tracker.CHANNEL);
 
+        if (channel) {
+            const message = await channel.send({
+                embed: this.buildEventEmbed(event, server)
+            });
+
+            const stored = this.status.get(tracker.CHANNEL);
+
+            if (stored) {
+                stored.message = message;
+            }
+        }
+    }
+
+    buildEventEmbed(event, server) {
         const tags = [
             server.season,
             server.mode
@@ -112,23 +175,33 @@ class ServerTracker {
             tags.push('Outdated');
         }
 
-        if (channel) {
-            channel.send({
-                embed: {
-                    title: `:flag_${server.countryCode}: ${this.formatName(server.name)}`,
-                    color: this.getColor(event),
-                    description: this.getStatus(event) + `\n` +
-                        `${server.players} players online`,
-                    footer: {
-                        text: tags.join(' | ')
-                    }
-                }
-            });
+        if (server.passworded) {
+            tags.push('Password');
         }
+
+        if (server.pvp) {
+            tags.push('PvP');
+        }
+
+        if (server.official) {
+            tags.push('Klei');
+        }
+
+        return {
+            title: `:flag_${server.countryCode}: ${this.formatName(server.name)}`,
+            color: this.getColor(event),
+            description: this.getStatus(event) + `\n` +
+                `${server.players} players online`,
+            footer: {
+                text: tags.join(' | ')
+            }
+        };
     }
 
     formatName(name) {
         return name
+            .replace(/󰀅/g, ':eyeball:')
+            .replace(/󰀯/g, ':wormhole:')
             .replace(/󰀈/g, ':fire:')
             .replace(/󰀉/g, ':ghost:')
             .replace(/󰀍/g, ':heart:')
@@ -176,53 +249,58 @@ class ServerTracker {
         console.timeEnd('parsing');
 
         console.time('deserializing');
-        const servers = document.querySelectorAll('.list tr')
+        const servers = document.querySelectorAll('.list > tr')
             .map(row => {
-                const flag = row.querySelector('.flag-icon');
-                const country = flag && flag.attributes['data-tooltip'];
-                const countryCode = flag && flag.attributes['class'].split(' ')
+                const firstData = row.querySelector('td');
+
+                // Get name, no error checking
+                const name = firstData.querySelector('.fnm').text;
+
+                // Get country name and code
+                const flag = firstData.querySelector('.flag-icon');
+                const country = flag.getAttribute('data-tooltip');
+                const countryCode = flag.getAttribute('class').split(' ')
                     .pop()
                     .split('-')
                     .pop();
 
-                const fnm = row.querySelector('.fnm');
-                if (!fnm) {
-                    return null;
-                }
+                // Get platform: Steam, WeGame, PS4, more?
+                const platform = row.querySelector('.fpf').text;
 
-                const name = fnm.text;
-                if (!name) {
-                    return null;
-                }
-
+                // Get player count, fpy is also used to check for password
                 const fpy = row.querySelector('.fpy');
-                const players = fpy && fpy.firstChild && fpy.firstChild.text;
+                const players = fpy.firstChild.text;
 
+                // Get gamemode (normal/endless) and current season
                 const mode = row.querySelector('.fmd').text;
                 const season = row.querySelector('.fss').text;
 
-                const icons = row.querySelectorAll('.mico');
-                const icon = icons[icons.length - 1];
-                const modded = icon && icon.text === 'settings';
-                const outdated = icon && icon.text === 'warning';
+                // Get some flags: modded, outdated, pvp, official, passworded
+                const icons = firstData.querySelectorAll('.mico');
+                const modded = icons.some(icon => icon.text === 'settings');
+                const outdated = icons.some(icon => icon.text === 'warning');
+                const pvp = icons.some(icon => icon.text === 'restaurant_menu');
+                const official = icons.some(icon => icon.text === 'check_circle');
+
+                // Player count can have a lock icon if it's passworded
+                const passworded = fpy.querySelector('.mico') !== null;
 
                 return {
                     country,
                     countryCode,
+                    platform,
                     players,
                     name,
                     mode,
                     season,
                     modded,
-                    outdated
+                    outdated,
+                    pvp,
+                    official,
+                    passworded
                 };
-            })
-            .filter(server => server !== null);
+            });
         console.timeEnd('deserializing');
-
-        // console.log(document.querySelectorAll('.list tr').length);
-        // console.log(servers.length);
-        // console.log(servers[0]);
 
         return servers;
     }
