@@ -142,7 +142,7 @@ class Commander {
             message.author.id === this.bot.client.user.id
         ) return;
 
-        if (this.dev && this.bot.config.DEV.GUILD !== message.guild.id) return;
+        if (this.dev && message.guild && this.bot.config.DEV.GUILD !== message.guild.id) return;
 
         return this.messageMatchers.get(message.id, () => this.tryMatchCommands(message));
     }
