@@ -34,7 +34,7 @@ class TranslateCommand extends Command {
 
     async call(message, content) {
         const { text, from, to } = message.mentions.size > 0
-            ? this.extractData(this.getStatus(message.mentions.users.first().id))
+            ? this.extractData(this.getStatus(message.mentions.users.first()))
             : this.extractData(content);
         
         
@@ -53,8 +53,7 @@ class TranslateCommand extends Command {
         });
     }
     
-    getStatus(userId) {
-        const user = this.bot.client.users.cache.get(`${userId}`);
+    getStatus(user) {
         const status = user.presence.activities.find(activity => activity.type === 'CUSTOM_STATUS');
         
         if (status) {
