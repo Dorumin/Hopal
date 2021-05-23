@@ -12,8 +12,8 @@ class PickCommand extends Command {
         super(bot);
         this.aliases = ['pick', 'choose', 'decide'];
 
-        this.shortdesc = `Thinks for you`;
-        this.desc = `Decides important life changing decisions`;
+        this.shortdesc = `Thinks for you.`;
+        this.desc = `Decides important life changing decisions.`;
         this.usages = [
             '!pick 1; 2; 3; 4'
         ];
@@ -23,7 +23,7 @@ class PickCommand extends Command {
         const split = content.split(';');
         const chosen =  split[Math.floor(Math.random() * split.length)].trim();
 
-        await message.channel.send(`I pick ${this.bot.fmt.bold(chosen)}`);
+        await message.channel.send(`I pick ${this.bot.fmt.bold(chosen)}!`);
     }
 }
 
