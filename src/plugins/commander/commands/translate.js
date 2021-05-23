@@ -6,10 +6,10 @@ class TranslateCommand extends Command {
         super(bot);
         this.aliases = ['translate', 't'];
 
-        this.shortdesc = `Translates some text`;
+        this.shortdesc = `Translates some text.`;
         this.desc = `
             Gives you the translation of some text you give, and a link to Google Translate
-            You can choose what language to translate into by passing its code as a prefix, e.g. \`en\`i
+            You can choose what language to translate into by passing its code as a prefix, e.g. \`es\`.
             `;
         this.usages = [
             '!translate hola',
@@ -17,11 +17,27 @@ class TranslateCommand extends Command {
             '!translate ro>en doru',
             '!t es i love you'
         ];
+        this.languages = [
+            'zh', // Chinese
+            'en', // English
+            'fr', // French
+            'de', // German/D
+            'el', // Greek
+            'ja', // Weeb
+            'pl', // Polish
+            'pt', // Portugese
+            'ru', // Russki
+            'sr', // Serbian
+            'es', // Spanish
+        ];
     }
 
     async call(message, content) {
-        const { text, from, to } = this.extractData(content);
-
+        const { text, from, to } = message.mentions.length > 1
+            ? this.extractData(this.getStatus(message.mentions.users.first().id))
+            : this.extractData(content);
+        
+        
         const translation = await this.getTranslation({
             from,
             to,
@@ -36,14 +52,25 @@ class TranslateCommand extends Command {
             }
         });
     }
-
+    
+    getStatus(userId) {
+        const user = this.bot.client.users.cache.get(`${userId}`);
+        const status = user.presence.activities.find(activity => activity.type === 'CUSTOM_STATUS');
+        
+        if (status) {
+            return status.state;
+        } else {
+            return 'No status found';
+        }
+    }
+    
     extractData(content) {
         const match = content.match(/^([a-z]{2})(?:>([a-z]{2}))?\s/);
-
+        
         let text;
         let from;
         let to;
-        if (match) {
+        if (match && this.languages.includes(match)) {
             text = content.slice(match[0].length);
 
             if (match[2]) {
