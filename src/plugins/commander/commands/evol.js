@@ -46,7 +46,9 @@ class EvalCommand extends OPCommand {
                 compact: false
             });
 
-			if (str.length < 2000) break;
+            break;
+
+			// if (str.length < 2000) break;
 		}
 
         // Double the indent, from 2 spaces to 4
