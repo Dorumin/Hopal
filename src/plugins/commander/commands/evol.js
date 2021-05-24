@@ -189,14 +189,15 @@ class EvalCommand extends OPCommand {
         // Strip any leading semicolons, this shouldn't break anything
         code = code.replace(/;+$/g, '').trim();
 
+        // TODO: Do the greatest regex trick for these
         const isAsync = code.includes('await');
         const isExpression = !code.includes(';') &&
             !/\b(if|while|for|try|const|let)\b/.test(code);
 
         if (isAsync) {
-            code = `(async () => {
-                ${isExpression ? 'return ' : ''}${code};
-            })()`;
+            code = `(async () => {\n` +
+            `    ${isExpression ? 'return ' : ''}${code};\n` +
+            `})()`;
         }
 
         return code;
@@ -285,7 +286,11 @@ class EvalCommand extends OPCommand {
 
         this.afterEval(context);
 
-        return result;
+        // Wrap in an object so `await`ing doesn't automatically unwrap it
+        // Inner promises should be preserved
+        return {
+            result
+        };
     }
 
     sendExpand(channel, string, lang) {
@@ -380,7 +385,7 @@ class EvalCommand extends OPCommand {
     async call(message, content) {
         const code = this.getCode(content);
         const context = this.getVars(message);
-        const result = await this.evaluate(code, context);
+        const { result } = await this.evaluate(code, context);
 
         if (result && result instanceof Error && result.inner) {
             await message.channel.send(
