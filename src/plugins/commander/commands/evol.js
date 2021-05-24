@@ -277,7 +277,7 @@ class EvalCommand extends OPCommand {
 
         let result;
         try {
-            result = await eval(code);
+            result = eval(code);
         } catch(e) {
             result = new Error('');
             result.inner = e;
@@ -357,6 +357,17 @@ class EvalCommand extends OPCommand {
 
         if (result instanceof MessageEmbed) {
             return await channel.send(result);
+        }
+
+        if (result instanceof Promise) {
+            const value = await result;
+
+            if (value === undefined) {
+                // Exception for promises; undefined is not echoed
+                return;
+            }
+
+            return await this.respond(value, context);
         }
 
         if (typeof result === 'object') {
