@@ -7,6 +7,8 @@ const FormatterPlugin = require('../../fmt');
 
 const swallow = () => {};
 
+const _require = require;
+
 class EvalCommand extends OPCommand {
     static get deps() {
         return [
@@ -59,7 +61,7 @@ class EvalCommand extends OPCommand {
 
     require(channel, name) {
         try {
-            return require(name);
+            return _require(name);
         } catch(e) {
             // This is a HACK to essentially send a message on another thread
             // I use curl because I can't be assed to spawn a small js file to post with got
@@ -86,9 +88,9 @@ class EvalCommand extends OPCommand {
             child_process.execSync(`npm install ${name}`);
 
             // Clear require cache
-            delete require.cache[require.resolve(name)];
+            delete _require.cache[_require.resolve(name)];
 
-            return require(name);
+            return _require(name);
         }
     }
 
@@ -206,6 +208,9 @@ class EvalCommand extends OPCommand {
 
             // Module stuff
             got: require('got'),
+            fs: require('fs'),
+            path: require('path'),
+            util: require('util'),
 
             // For detecting command file evals
             module: {
