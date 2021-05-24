@@ -1,3 +1,4 @@
+const path = require('path');
 const util = require('util');
 const child_process = require('child_process');
 const { BaseManager, MessageAttachment, MessageEmbed } = require('discord.js');
@@ -87,10 +88,42 @@ class EvalCommand extends OPCommand {
             // });
             child_process.execSync(`npm install ${name}`);
 
-            // Clear require cache
-            delete _require.cache[_require.resolve(name)];
+            // Try to clear require cache
+            try {
+                delete _require.cache[_require.resolve(name)];
+            } catch(e) {}
 
-            return _require(name);
+            try {
+                return _require(name);
+            } catch(e) {
+                // HACK: Try to perform npm's script resolution ourselves
+                // Some packages fail to dynamically load
+                // I have no idea why.
+                // The cache has nothing to do with it
+                // Let's just hope this works for the ones that fail
+
+                const node_modules = path.join(process.cwd(), 'node_modules');
+                const packagePath = path.join(node_modules, name);
+                const packageJsonPath = path.join(packagePath, 'package.json');
+
+                let packageJson;
+                try {
+                    packageJson = require(packageJsonPath);
+                } catch(_) {
+                    // Error in our bootleg custom loading, rethrow original err
+                    throw e;
+                }
+
+                const relativeMainPath = packageJson.main || 'index.js';
+                const mainPath = path.join(packagePath, relativeMainPath);
+
+                try {
+                    return require(mainPath);
+                } catch(_) {
+                    // Error in our bootleg custom loading, rethrow original err
+                    throw e;
+                }
+            }
         }
     }
 
