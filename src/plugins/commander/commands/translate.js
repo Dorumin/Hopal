@@ -33,11 +33,16 @@ class TranslateCommand extends Command {
     }
 
     async call(message, content) {
-        const { text, from, to } = message.mentions.users.size > 0
-            ? this.extractData(this.getStatus(message.mentions.users.first()))
-            : this.extractData(content);
-        
-        
+        let { text, from, to } = this.extractData(content);
+
+        if (message.mentions.users.size === 1) {
+            const status = this.getStatus(message.mentions.users.first());
+
+            if (status) {
+                text = status;
+            }
+        }
+
         const translation = await this.getTranslation({
             from,
             to,
@@ -52,27 +57,28 @@ class TranslateCommand extends Command {
             }
         });
     }
-    
+
     getStatus(user) {
-        const status = user.presence.activities.find(activity => activity.type === 'CUSTOM_STATUS');
-        
+        const status = user.presence.activities
+            .find(activity => activity.type === 'CUSTOM_STATUS');
+
         if (status) {
             return status.state;
         } else {
-            return 'No status found';
+            return null;
         }
     }
-    
+
     extractData(content) {
         const match = content.match(/^([a-z]{2})(?:>([a-z]{2}))?\s/);
-        
+
         let text;
         let from;
         let to;
-        if (match && this.languages.includes(match)) {
+        if (match && this.languages.includes(match[1])) {
             text = content.slice(match[0].length);
 
-            if (match[2]) {
+            if (match[2] && this.languages.includes(match[2])) {
                 from = match[1];
                 to = match[2];
             } else {
