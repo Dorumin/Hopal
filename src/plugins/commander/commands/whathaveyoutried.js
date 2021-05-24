@@ -1,6 +1,6 @@
 const Command = require('../structs/Command.js');
 
-class ProofOfEffortCommand extends Command {
+class WhatHaveYouTriedCommand extends Command {
     constructor(bot) {
         super(bot);
         this.aliases = ['whyt', 'whathaveyoutried'];
@@ -10,7 +10,6 @@ class ProofOfEffortCommand extends Command {
         this.usages = [
             '!whyt',
             '!whathaveyoutried'
-            '!whathaveyoutried?'
         ];
     }
 
@@ -22,4 +21,4 @@ Willingness and desire to learn are the true qualifications of a worthy question
     }
 }
 
-module.exports = ProofOfEffortCommand;
+module.exports = WhatHaveYouTriedCommand;
