@@ -52,8 +52,10 @@ class EvalCommand extends OPCommand {
                 compact: false
             });
 
-            break;
+            // Discord 8mb file upload limit
+            if (str.length < 8388269) break;
 
+            // Or, alternatively, the message limit
 			// if (str.length < 2000) break;
 		}
 
