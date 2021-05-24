@@ -284,7 +284,11 @@ class EvalCommand extends OPCommand {
             result.inner = e;
         }
 
-        this.afterEval(context);
+        // In an ideal world, afterEval would be here
+        // But we do not live in an ideal world
+        // Promises created here are not awaited here
+        // So it's instead called after this.respond in this.call
+        // this.afterEval(context);
 
         // Wrap in an object so `await`ing doesn't automatically unwrap it
         // Inner promises should be preserved
@@ -394,6 +398,8 @@ class EvalCommand extends OPCommand {
         } else {
             await this.respond(result, context);
         }
+
+        this.afterEval();
 
         const exported = context.module.exports;
 
