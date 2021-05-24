@@ -37,6 +37,9 @@ class EvalCommand extends OPCommand {
         ];
 
         this.ignoredObjects = [];
+
+        // Internal require cache for our custom-loader for dynamic npm installs
+        this.stupidRequireCache = new Map();
 	}
 
 	inspect(object) {
@@ -61,6 +64,11 @@ class EvalCommand extends OPCommand {
 	}
 
     require(channel, name) {
+        // Accomodate our stupid cache
+        if (this.stupidRequireCache.has(name)) {
+            return this.stupidRequireCache.get(name);
+        }
+
         try {
             return _require(name);
         } catch(e) {
@@ -118,7 +126,16 @@ class EvalCommand extends OPCommand {
                 const mainPath = path.join(packagePath, relativeMainPath);
 
                 try {
-                    return require(mainPath);
+                    const mod = require(mainPath);
+
+                    // Set the module in our require cache
+                    // So next time loading it won't send the
+                    // "Dynamically loading X..." message
+                    // It happens because the native `require(name)` call
+                    // throws an error, which is what we're addressing here
+                    this.stupidRequireCache.set(name, mod);
+
+                    return mod;
                 } catch(_) {
                     // Error in our bootleg custom loading, rethrow original err
                     throw e;
