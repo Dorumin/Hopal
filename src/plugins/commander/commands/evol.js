@@ -369,14 +369,24 @@ class EvalCommand extends OPCommand {
         }
 
         if (result instanceof Promise) {
-            const value = await result;
+            // Failure in this stage is not a problem
+            // As the value is only used for not posting undefined
+            // Errors will still be reported back in the inspect
+            try {
+                const value = await result;
 
-            if (value === undefined) {
-                // Exception for promises; undefined is not echoed
-                return;
-            }
+                if (value === undefined) {
+                    // Exception for promises; undefined is not echoed
+                    return;
+                }
+            } catch(e) {}
 
-            return await this.respond(value, context);
+            // Respond with the inspection of the promise itself
+            // So it's explicit that the value is a promise,
+            // and also show the inner value of the resolved (or failed) promise
+            const inspection = this.inspect(result);
+
+            return await this.sendExpand(channel, inspection, 'js');
         }
 
         if (typeof result === 'object') {
