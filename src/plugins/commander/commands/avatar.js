@@ -27,7 +27,7 @@ class AvatarCommand extends Command {
         return new MessageAttachment(url, `avatar.${ext}`);
     }
 
-    async call(message) {
+    async call(message, content) {
         let user = message.mentions.users.first();
 
         if (!user) {
