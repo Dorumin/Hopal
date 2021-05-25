@@ -21,7 +21,7 @@ class AvatarCommand extends Command {
 
     getAvatar(user) {
         const avatarHash = user.avatar;
-        const ext = this.getExtension(avatar);
+        const ext = this.getExtension(avatarHash);
         const url = `https://cdn.discordapp.com/avatars/${user.id}/${avatarHash}.${ext}?size=2048`;
 
         return new MessageAttachment(url, `avatar.${ext}`);
