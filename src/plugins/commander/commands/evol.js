@@ -1,6 +1,7 @@
 const path = require('path');
 const util = require('util');
 const child_process = require('child_process');
+const { parse } = require('node-html-parser');
 const { BaseManager, MessageAttachment, MessageEmbed } = require('discord.js');
 const Command = require('../structs/Command.js');
 const OPCommand = require('../structs/OPCommand.js');
@@ -299,8 +300,33 @@ class EvalCommand extends OPCommand {
         };
     }
 
+    predictExtension(text) {
+        if (text.charAt(0) === '<') {
+            try {
+                parse(text);
+
+                return 'html';
+            } catch(e) {
+                // fallthrough
+            }
+        }
+
+        if (text.charAt(0) === '{') {
+            try {
+                JSON.parse(text);
+
+                return 'json';
+            } catch(e) {
+                // fallthrough
+            }
+        }
+
+        return 'txt';
+    }
+
     sendExpand(channel, string, lang) {
-        const codeBlock = lang === undefined
+        const ext = lang || this.predictExtension(string);
+        const codeBlock = lang === undefined && ext === 'txt'
             ? string
             : this.bot.fmt.codeBlock(lang, string);
 
@@ -309,7 +335,7 @@ class EvalCommand extends OPCommand {
                 files: [
                     new MessageAttachment(
                         Buffer.from(string, 'utf8'),
-                        `eval.${lang || 'txt'}`
+                        `eval.${lang || ext}`
                     )
                 ]
             });
