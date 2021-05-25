@@ -1,7 +1,7 @@
 const path = require('path');
 const util = require('util');
 const child_process = require('child_process');
-const { parse } = require('node-html-parser');
+const { parse, HTMLElement, TextNode } = require('node-html-parser');
 const { BaseManager, MessageAttachment, MessageEmbed } = require('discord.js');
 const Command = require('../structs/Command.js');
 const OPCommand = require('../structs/OPCommand.js');
@@ -324,17 +324,124 @@ class EvalCommand extends OPCommand {
         return 'txt';
     }
 
+    indent(tabs) {
+        return new Array(tabs + 1).join('    ');
+    }
+
+    formatHTMLTag(element, indent) {
+        const { childNodes, rawTagName } = element;
+
+        if (rawTagName === null) {
+            // Root node, flatten children
+            let content = '';
+            for (const node of childNodes) {
+                if (node instanceof TextNode) {
+                    content += `\n${this.indent(indent)}"${node.text}"`;
+                } else if (node instanceof HTMLElement) {
+                    content += `\n${this.indent(indent)}${this.formatHTMLTag(node, indent)}`;
+                }
+            }
+
+            // Remove initial newline
+            return content.slice(1);
+        }
+
+        let tag = `<${rawTagName}`;
+        if (element.rawAttrs) {
+            tag += ` ${element.rawAttrs}`;
+        }
+
+        if (childNodes.length === 0) {
+            tag += ' />';
+
+            return tag;
+        } else {
+            tag += '>';
+        }
+
+        let content = '';
+
+        if (childNodes.length === 1 && childNodes[0] instanceof TextNode) {
+            // Single text node, <span>hello</span>
+            content = childNodes[0].text.trim();
+        } else {
+            for (const node of childNodes) {
+                if (node instanceof TextNode) {
+                    content += `\n${this.indent(indent + 1)}"${node.text}"`;
+                } else if (node instanceof HTMLElement) {
+                    content += `\n${this.indent(indent + 1)}${this.formatHTMLTag(node, indent + 1)}`;
+                }
+            }
+
+            content += `\n${this.indent(indent)}`;
+        }
+
+        const closingTag = `</${rawTagName}>`;
+
+        return `${tag}${content}${closingTag}`;
+    }
+
+    formatHTMLDocument(document) {
+        return this.formatHTMLTag(document, 0);
+    }
+
+    predictExtensionAndFormat(text) {
+        if (text.charAt(0) === '<') {
+            let document;
+            try {
+                document = parse(text);
+            } catch(e) {
+                // fallthrough
+                console.error(e);
+            }
+
+            if (document !== undefined) {
+                return {
+                    ext: 'html',
+                    formatted: this.formatHTMLDocument(document)
+                };
+            }
+        }
+
+        if (text.charAt(0) === '{') {
+            try {
+                const object = JSON.parse(text);
+
+                return {
+                    ext: 'json',
+                    formatted: JSON.stringify(object, null, 4)
+                };
+            } catch(e) {
+                // fallthrough
+            }
+        }
+
+        return {
+            ext: 'txt',
+            formatted: text
+        };
+    }
+
     sendExpand(channel, string, lang) {
-        const ext = lang || this.predictExtension(string);
+        let predicted;
+        if (lang === undefined) {
+            predicted = this.predictExtensionAndFormat(string);
+        }
+
+        const ext = lang || predicted.ext;
+        const formatted = predicted ? predicted.formatted : string;
+
         const codeBlock = lang === undefined && ext === 'txt'
             ? string
-            : this.bot.fmt.codeBlock(lang, string);
+            : this.bot.fmt.codeBlock(ext,
+                formatted
+            );
 
         if (codeBlock.length >= 2000) {
             return channel.send({
                 files: [
                     new MessageAttachment(
-                        Buffer.from(string, 'utf8'),
+                        Buffer.from(formatted, 'utf8'),
                         `eval.${lang || ext}`
                     )
                 ]
