@@ -13,11 +13,11 @@ class WhatHaveYouTriedCommand extends Command {
         ];
     }
 
-    call(message) {
-        message.channel.send(`
+    async call(message) {
+        await message.channel.send(`
 Willingness and desire to learn are the true qualifications of a worthy question asker.
 <https://mattgemmell.com/what-have-you-tried/>
-        `)
+        `);
     }
 }
 
