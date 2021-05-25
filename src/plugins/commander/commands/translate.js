@@ -1,5 +1,6 @@
 const got = require('got');
 const Command = require('../structs/Command.js');
+const { Util } = require('discord.js');
 
 class TranslateCommand extends Command {
     constructor(bot) {
@@ -32,15 +33,26 @@ class TranslateCommand extends Command {
         ];
     }
 
+    removeMentions(text) {
+        return text.replace(/<@[!&]?\d+>/, '').trim();
+    }
+
     async call(message, content) {
         let { text, from, to } = this.extractData(content);
 
-        if (message.mentions.users.size === 1) {
+        text = this.removeMentions(text);
+
+        if (!text && message.mentions.users.size === 1) {
             const status = this.getStatus(message.mentions.users.first());
 
             if (status) {
                 text = status;
             }
+        } else {
+            // Replace any possible mentions with their cleaned up @text form
+            text = this.extractData(
+                Util.cleanContent(content, message)
+            ).text;
         }
 
         const translation = await this.getTranslation({
@@ -76,7 +88,7 @@ class TranslateCommand extends Command {
         let from;
         let to;
         if (match && this.languages.includes(match[1])) {
-            text = content.slice(match[0].length);
+            text = content.slice(match[0].length).trim();
 
             if (match[2] && this.languages.includes(match[2])) {
                 from = match[1];
