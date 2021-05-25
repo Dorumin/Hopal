@@ -1,6 +1,7 @@
 const got = require('got');
 const { parse } = require('node-html-parser');
-const Plugin = require('../../structs/Plugin.js');
+const Plugin = require('../../structs/Plugin');
+const Cache = require('../../structs/Cache');
 
 class ServerTrackerPlugin extends Plugin {
     load() {
@@ -15,7 +16,9 @@ class ServerTracker {
         this.tracking = this.config.SERVERS || [];
         this.meta = this.config.META || {};
 
-        this.status = new Map();
+        // this.status = new Map();
+        // this.stored = new Cache();
+        this.trackerState = [];
 
         bot.client.on('ready', this.onReady.bind(this));
     }
@@ -65,11 +68,10 @@ class ServerTracker {
         try {
             const servers = await this.fetch();
 
-            for (const tracker of this.tracking) {
+            for (const [index, tracker] of this.tracking.entries()) {
                 if (tracker.DISABLED) continue;
 
                 const matches = tracker.MATCH;
-                const id = tracker.CHANNEL;
 
                 let found = false;
                 let serverData;
@@ -88,30 +90,39 @@ class ServerTracker {
                 }
 
                 if (found) {
-                    if (!this.status.has(id)) {
+                    const state = this.trackerState[index];
+
+                    if (!state) {
                         this.onEvent({
                             event: 'UP',
                             server: serverData,
-                            tracker
+                            tracker,
+                            index
                         });
 
-                        this.status.set(id, serverData);
+                        this.trackerState[index] = {
+                            server: serverData
+                        };
                     } else {
                         this.onEvent({
                             event: 'UPDATE',
                             server: serverData,
-                            tracker
+                            tracker,
+                            index
                         });
                     }
                 } else {
-                    if (this.status.has(id)) {
+                    const state = this.trackerState[index];
+
+                    if (state) {
                         this.onEvent({
                             event: 'DOWN',
-                            server: this.status.get(id),
-                            tracker
+                            server: servers.get(serverData.id),
+                            tracker,
+                            index
                         });
 
-                        this.status.delete(id);
+                        this.trackerState[index] = undefined;
                     }
                 }
             }
@@ -122,7 +133,7 @@ class ServerTracker {
     }
 
     async onEvent(data) {
-        const { event, server, tracker } = data;
+        const { event, server, tracker, index } = data;
 
         console.log({
             event,
@@ -130,15 +141,17 @@ class ServerTracker {
         });
 
         if (event === 'UPDATE') {
-            const stored = this.status.get(tracker.CHANNEL);
+            const state = this.trackerState[index];
 
-            if (stored.message) {
-                this.status.set(tracker.CHANNEL, {
-                    ...stored,
-                    ...server
-                });
+            if (state.message) {
+                this.trackerState[index] = {
+                    server: {
+                        ...state.server,
+                        ...server
+                    }
+                };
 
-                await stored.message.edit({
+                await state.message.edit({
                     embed: this.buildEventEmbed('UP', server)
                 });
             }
@@ -153,10 +166,10 @@ class ServerTracker {
                 embed: this.buildEventEmbed(event, server)
             });
 
-            const stored = this.status.get(tracker.CHANNEL);
+            const state = this.trackerState[index];
 
-            if (stored) {
-                stored.message = message;
+            if (state) {
+                state.message = message;
             }
         }
     }
@@ -253,6 +266,8 @@ class ServerTracker {
             .map(row => {
                 const firstData = row.querySelector('td');
 
+                const id = row.getAttribute('id');
+
                 // Get name, no error checking
                 const name = firstData.querySelector('.fnm').text;
 
@@ -286,6 +301,7 @@ class ServerTracker {
                 const passworded = fpy.querySelector('.mico') !== null;
 
                 return {
+                    id,
                     country,
                     countryCode,
                     platform,
