@@ -44,9 +44,11 @@ class ServerTracker {
         while (true) {
             // await this.wait(this.meta.INTERVAL * 1000);
 
-            await this.updateMeta();
+            try {
+                await this.updateMeta();
 
-            await this.doFetch();
+                await this.doFetch();
+            } catch(e) {}
 
             await this.wait(this.meta.INTERVAL * 1000);
         }
