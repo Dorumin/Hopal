@@ -194,6 +194,9 @@ class ServerTracker {
 
         server.days = serverData.days;
         server.players = serverData.players;
+        // This isn't strictly necessary, but it doesn't hurt to avoid silly
+        // stuff like a different player count than player list
+        server.playerCount = serverData.players.length;
 
         console.log({
             event,
@@ -264,7 +267,7 @@ class ServerTracker {
             tags.push('Klei');
         }
 
-        let description = `${server.playerCount} players online`;
+        let description = `${server.playerCount}/${server.maxPlayers} players online`;
 
         if (server.players.length !== 0) {
             description += '\n';
@@ -377,7 +380,10 @@ class ServerTracker {
 
                 // Get player count, fpy is also used to check for password
                 const fpy = row.querySelector('.fpy');
-                const playerCount = fpy.firstChild.text;
+                const playersText = fpy.firstChild.text;
+                const match = playersText.match(/(\d+)\/(\d+)/);
+                const playerCount = Number(match[1]);
+                const maxPlayers = Number(match[2]);
 
                 // Get gamemode (normal/endless) and current season
                 const mode = row.querySelector('.fmd').text;
@@ -399,6 +405,7 @@ class ServerTracker {
                     countryCode,
                     platform,
                     playerCount,
+                    maxPlayers,
                     name,
                     mode,
                     season,
