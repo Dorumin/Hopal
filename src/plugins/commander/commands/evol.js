@@ -444,7 +444,7 @@ class EvalCommand extends OPCommand {
 
             // Capturing group 1: colon and whitespace, or start of line ws
             // Capturing group 2: reference number
-            return contents.replace(/(^\s*|:\s*)<ref \*(\d+)>/g, '$1<&ref $2>');
+            return contents.replace(/(^\s*|:\s*)<ref \*(\d+)>/gm, '$1<&ref $2>');
         }
 
         return contents;
