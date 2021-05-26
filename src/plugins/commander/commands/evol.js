@@ -9,8 +9,6 @@ const FormatterPlugin = require('../../fmt');
 
 const swallow = () => {};
 
-const _require = require;
-
 class EvalCommand extends OPCommand {
     static get deps() {
         return [
@@ -73,7 +71,7 @@ class EvalCommand extends OPCommand {
         }
 
         try {
-            return _require(name);
+            return require(name);
         } catch(e) {
             // This is a HACK to essentially send a message on another thread
             // I use curl because I can't be assed to spawn a small js file to post with got
@@ -101,11 +99,11 @@ class EvalCommand extends OPCommand {
 
             // Try to clear require cache
             try {
-                delete _require.cache[_require.resolve(name)];
+                delete require.cache[require.resolve(name)];
             } catch(e) {}
 
             try {
-                return _require(name);
+                return require(name);
             } catch(e) {
                 // HACK: Try to perform npm's script resolution ourselves
                 // Some packages fail to dynamically load
@@ -273,10 +271,21 @@ class EvalCommand extends OPCommand {
         };
     }
 
+    getCustomRequire(context) {
+        const customRequire = this.require.bind(this, context.message.channel);
+        customRequire.resolve = require.resolve;
+        customRequire.main = require.main;
+        customRequire.cache = require.cache;
+        // Deprecated:
+        // customRequire.extensions = require.extensions;
+
+        return customRequire;
+    }
+
     async evaluate(code, context) {
         this.beforeEval(context);
 
-        const require = this.require.bind(this, context.message.channel);
+        const require = this.getCustomRequire(context);
         swallow(require);
 
         let result;
