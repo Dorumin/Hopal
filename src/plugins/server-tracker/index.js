@@ -1,9 +1,15 @@
 const got = require('got');
 const { parse } = require('node-html-parser');
 const Plugin = require('../../structs/Plugin');
-const Cache = require('../../structs/Cache');
+const FormatterPlugin = require('../fmt');
 
 class ServerTrackerPlugin extends Plugin {
+    static get deps() {
+        return [
+            FormatterPlugin,
+        ];
+    }
+
     load() {
         this.bot.tracker = new ServerTracker(this.bot);
     }
@@ -12,6 +18,7 @@ class ServerTrackerPlugin extends Plugin {
 class ServerTracker {
     constructor(bot) {
         this.bot = bot;
+        this.dev = bot.config.ENV === 'development';
         this.config = bot.config.SERVER_TRACKER || {};
         this.tracking = this.config.SERVERS || [];
         this.meta = this.config.META || {};
@@ -32,6 +39,8 @@ class ServerTracker {
     }
 
     async startFetching() {
+        if (this.dev) return;
+
         while (true) {
             // await this.wait(this.meta.INTERVAL * 1000);
 
@@ -132,13 +141,67 @@ class ServerTracker {
         }
     }
 
+    async fetchServerData(server) {
+        const json = await got(`https://dstserverlist.appspot.com/ajax/status/${server.id}`, {
+            searchParams: {
+                [this.meta.CSRF_KEY]: this.meta.CSRF_VALUE
+            },
+            headers: {
+                'Cookie': this.meta.COOKIE,
+                'Referer': 'https://dstserverlist.appspot.com/',
+                'x-requested-with': 'XMLHttpRequest'
+            }
+        }).json();
+        const html = json.result;
+        const document = parse(html);
+
+        const serverTable = document.querySelector('#server tbody');
+        const daysRow = serverTable.childNodes[2];
+        const daysTableData = daysRow.childNodes[0];
+        const daysMatch = daysTableData.text.match(/Day (\d+)/);
+        const days = daysMatch ? daysMatch[1] : 'Unknown';
+
+        const playersList = document.querySelector('#players .row');
+        const playersRows = playersList.querySelectorAll('.col');
+        const players = playersRows.map(row => {
+            const anchor = row.childNodes[0];
+            const characterTextNode = row.childNodes[1];
+
+            const steamLink = anchor.getAttribute('href');
+            const name = anchor.text;
+            const character = characterTextNode === undefined
+                ? null
+                : characterTextNode.text.trim().replace(/^\(|\)$/g, '');
+
+            return {
+                steamLink,
+                name,
+                character
+            };
+        });
+
+
+        return {
+            days,
+            players
+        };
+    }
+
     async onEvent(data) {
         const { event, server, tracker, index } = data;
 
+        const serverData = await this.fetchServerData(server);
+
+        server.days = serverData.days;
+        server.players = serverData.players;
+
         console.log({
             event,
-            server
+            server,
+            serverData
         });
+
+        console.log(serverData.players);
 
         if (event === 'UPDATE') {
             const state = this.trackerState[index];
@@ -176,6 +239,7 @@ class ServerTracker {
 
     buildEventEmbed(event, server) {
         const tags = [
+            `Day ${server.days}`,
             server.season,
             server.mode
         ];
@@ -200,13 +264,28 @@ class ServerTracker {
             tags.push('Klei');
         }
 
+        let description = `${server.playerCount} players online`;
+
+        if (server.players.length !== 0) {
+            description += '\n';
+
+            for (const player of server.players) {
+                const { name, steamLink, character } = player;
+
+                description += `\n${this.bot.fmt.link(name, steamLink)}`;
+
+                if (character !== null) {
+                    description += ` (${character})`;
+                }
+            }
+        }
+
         return {
             title: `:flag_${server.countryCode}: ${this.formatName(server.name)}`,
             color: this.getColor(event),
-            description: this.getStatus(event) + `\n` +
-                `${server.players} players online`,
+            description,
             footer: {
-                text: tags.join(' | ')
+                text: `${this.getStatusEmoji(event)} ` + tags.join(' | ')
             }
         };
     }
@@ -221,12 +300,26 @@ class ServerTracker {
             .replace(/󰀁/g, ':beefalo:');
     }
 
+    getStatusEmoji(event) {
+        switch(event) {
+            case 'UP':
+                // return ':green_circle:';
+                return '🟢';
+            case 'DOWN':
+                // return ':red_circle:';
+                return '🔴';
+            default:
+                // return ':black_circle:';
+                return '⚫';
+        }
+    }
+
     getStatus(event) {
         switch(event) {
             case 'UP':
-                return ':white_check_mark: Now online!';
+                return ':white_check_mark: Online!';
             case 'DOWN':
-                return ':x: Now offline';
+                return ':x: Offline';
             default:
                 return 'Ehhhh?';
         }
@@ -284,7 +377,7 @@ class ServerTracker {
 
                 // Get player count, fpy is also used to check for password
                 const fpy = row.querySelector('.fpy');
-                const players = fpy.firstChild.text;
+                const playerCount = fpy.firstChild.text;
 
                 // Get gamemode (normal/endless) and current season
                 const mode = row.querySelector('.fmd').text;
@@ -305,7 +398,7 @@ class ServerTracker {
                     country,
                     countryCode,
                     platform,
-                    players,
+                    playerCount,
                     name,
                     mode,
                     season,
