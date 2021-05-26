@@ -190,10 +190,18 @@ class ServerTracker {
             };
         });
 
+        const modCount = document.querySelectorAll('#mods .col').length;
+
+        const dedicatedRow = serverTable.childNodes[3];
+        const dedicatedCheckBox = dedicatedRow.querySelector('.col input');
+        const dedicated = dedicatedCheckBox &&
+            dedicatedCheckBox.getAttribute('checked') === 'checked';
 
         return {
             days,
-            players
+            players,
+            dedicated,
+            modCount
         };
     }
 
@@ -204,6 +212,8 @@ class ServerTracker {
 
         server.days = serverData.days;
         server.players = serverData.players;
+        server.modCount = serverData.modCount;
+        server.dedicated = serverData.dedicated;
         // This isn't strictly necessary, but it doesn't hurt to avoid silly
         // stuff like a different player count than player list
         server.playerCount = serverData.players.length;
@@ -259,7 +269,11 @@ class ServerTracker {
         ];
 
         if (server.modded) {
-            tags.push('Modded');
+            if (server.modCount) {
+                tags.push(`${server.modCount} Mods`);
+            } else {
+                tags.push('Modded');
+            }
         }
 
         if (server.outdated) {
