@@ -208,23 +208,23 @@ class ServerTracker {
     async onEvent(data) {
         const { event, server, tracker, index } = data;
 
-        const serverData = await this.fetchServerData(server);
+        // Only update extra server data when ON or UPDATE
+        if (event !== 'DOWN') {
+            const serverData = await this.fetchServerData(server);
 
-        server.days = serverData.days;
-        server.players = serverData.players;
-        server.modCount = serverData.modCount;
-        server.dedicated = serverData.dedicated;
-        // This isn't strictly necessary, but it doesn't hurt to avoid silly
-        // stuff like a different player count than player list
-        server.playerCount = serverData.players.length;
+            server.days = serverData.days;
+            server.players = serverData.players;
+            server.modCount = serverData.modCount;
+            server.dedicated = serverData.dedicated;
+            // This isn't strictly necessary, but it doesn't hurt to avoid silly
+            // stuff like a different player count than player list
+            server.playerCount = serverData.players.length;
+        }
 
         console.log({
             event,
-            server,
-            serverData
+            server
         });
-
-        console.log(serverData.players);
 
         if (event === 'UPDATE') {
             const state = this.trackerState[index];
