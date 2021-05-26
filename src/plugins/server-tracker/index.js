@@ -112,16 +112,16 @@ class ServerTracker {
                     const state = this.trackerState[index];
 
                     if (!state) {
+                        this.trackerState[index] = {
+                            server: serverData
+                        };
+
                         this.onEvent({
                             event: 'UP',
                             server: serverData,
                             tracker,
                             index
                         });
-
-                        this.trackerState[index] = {
-                            server: serverData
-                        };
                     } else {
                         this.onEvent({
                             event: 'UPDATE',
@@ -221,6 +221,7 @@ class ServerTracker {
 
             if (state.message) {
                 this.trackerState[index] = {
+                    ...state,
                     server: {
                         ...state.server,
                         ...server
