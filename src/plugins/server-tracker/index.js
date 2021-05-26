@@ -88,7 +88,7 @@ class ServerTracker {
                 let serverData;
                 for (const server of servers) {
                     const matching = matches.every(s => server.name.includes(s));
-                    const matchingProps = true;
+                    let matchingProps = true;
 
                     if (tracker.hasOwnProperty('PROPS')) {
                         for (const key in tracker.PROPS) {
