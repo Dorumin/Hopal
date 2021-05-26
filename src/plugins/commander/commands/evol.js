@@ -431,6 +431,25 @@ class EvalCommand extends OPCommand {
         };
     }
 
+    cleanContents(contents, lang) {
+        if (lang === 'js' || lang === 'javascript') {
+            // <ref *n> breaks js syntax highlighting with highlight.js
+            // It breaks it in key: <ref *n> [something] contexts and
+            // Promise {
+            //     <ref *n> [something]
+            // }
+            // contexts
+            // Fix it by replacing it with &ref at the start of lines with ws
+            // and after colons
+
+            // Capturing group 1: colon and whitespace, or start of line ws
+            // Capturing group 2: reference number
+            return contents.replace(/(^\s*|:\s*)<ref \*(\d+)>/g, '$1<&ref $2>');
+        }
+
+        return contents;
+    }
+
     sendExpand(channel, string, lang) {
         let predicted;
         if (lang === undefined) {
@@ -440,17 +459,19 @@ class EvalCommand extends OPCommand {
         const ext = lang || predicted.ext;
         const formatted = predicted ? predicted.formatted : string;
 
+        const cleaned = this.cleanContents(formatted, lang);
+
         const codeBlock = lang === undefined && ext === 'txt'
             ? string
             : this.bot.fmt.codeBlock(ext,
-                formatted
+                cleaned
             );
 
         if (codeBlock.length >= 2000) {
             return channel.send({
                 files: [
                     new MessageAttachment(
-                        Buffer.from(formatted, 'utf8'),
+                        Buffer.from(cleaned, 'utf8'),
                         `eval.${lang || ext}`
                     )
                 ]
