@@ -126,7 +126,7 @@ class ServerTracker {
                     if (state) {
                         this.onEvent({
                             event: 'DOWN',
-                            server: servers.get(serverData.id),
+                            server: state.server,
                             tracker,
                             index
                         });
