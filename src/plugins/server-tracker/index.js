@@ -210,15 +210,26 @@ class ServerTracker {
 
         // Only update extra server data when ON or UPDATE
         if (event !== 'DOWN') {
-            const serverData = await this.fetchServerData(server);
+            try {
+                const serverData = await this.fetchServerData(server);
 
-            server.days = serverData.days;
-            server.players = serverData.players;
-            server.modCount = serverData.modCount;
-            server.dedicated = serverData.dedicated;
-            // This isn't strictly necessary, but it doesn't hurt to avoid silly
-            // stuff like a different player count than player list
-            server.playerCount = serverData.players.length;
+                server.days = serverData.days;
+                server.players = serverData.players;
+                server.modCount = serverData.modCount;
+                server.dedicated = serverData.dedicated;
+                // This isn't strictly necessary, but it doesn't hurt to avoid silly
+                // stuff like a different player count than player list
+                server.playerCount = serverData.players.length;
+            } catch(e) {
+                console.log('Caught error while fetching extra data from server');
+                console.log('Server likely offline');
+                console.log(e);
+                console.log('Response', e.response);
+
+                if (e.response) {
+                    console.log('Body', e.response.body);
+                }
+            }
         }
 
         console.log({
