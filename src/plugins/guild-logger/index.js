@@ -49,9 +49,50 @@ class GuildLogger {
     }
 
     onReady() {
+        this.bot.client.on('emojiCreate', this.onEmojiCreate.bind(this));
         this.bot.client.on('messageUpdate', this.onMessageUpdate.bind(this));
         this.bot.client.on('messageDelete', this.onMessageDelete.bind(this));
         this.bot.client.on('voiceStateUpdate', this.onVoiceStateUpdate.bind(this));
+    }
+
+    async onEmojiCreate(emoji) {
+        if (!this.listeners.EMOJI_CREATE) return;
+        if (!emoji.guild) return;
+
+        for (const listener of this.listeners.EMOJI_CREATE) {
+            if (listener.guildId !== emoji.guild.id) continue;
+
+            const channel = emoji.guild.channels.cache.get(listener.channelId);
+            if (!channel) continue;
+
+            console.log(emoji);
+
+            let author = emoji.author;
+            if (!author) {
+                try {
+                    author = await emoji.fetchAuthor();
+                } catch(e) {
+                    console.log(e);
+                }
+            }
+
+            console.log(author);
+
+            let description;
+            if (author) {
+                description = `<@${emoji.author.id}> has created the emoji ${emoji}`;
+            } else {
+                description = `The ${emoji} emoji was created`;
+            }
+
+            channel.send(
+                new MessageEmbed()
+                    .setDescription(description)
+                    .setImage(emoji.url)
+                    .setFooter('Emoji create')
+                    .setTimestamp()
+            );
+        }
     }
 
     onMessageUpdate(oldMessage, newMessage) {
@@ -60,34 +101,33 @@ class GuildLogger {
         if (oldMessage.content === newMessage.content) return;
 
         for (const listener of this.listeners.MESSAGE_UPDATE) {
-            if (listener.guildId === newMessage.guild.id) {
-                const channel = newMessage.guild.channels.cache.get(listener.channelId);
+            if (listener.guildId !== newMessage.guild.id) continue;
 
-                if (channel) {
-                    let description = `<@${newMessage.author.id}> edited a message in <#${newMessage.channel.id}>`;
+            const channel = newMessage.guild.channels.cache.get(listener.channelId);
+            if (!channel) contiue;
 
-                    if (oldMessage.content) {
-                        description += `\n\nContent was:\n${oldMessage.content}`;
+            let description = `<@${newMessage.author.id}> edited a message in <#${newMessage.channel.id}>`;
 
-                        // Not that necessary
-                        //
-                        // const extra = '\n\nNow is:\n' + newMessage.content;
-                        //
-                        // if ((description + extra).length <= 2048) {
-                        //     description += extra;
-                        // }
-                    }
+            if (oldMessage.content) {
+                description += `\n\nContent was:\n${oldMessage.content}`;
 
-                    channel.send(
-                        new MessageEmbed()
-                            .setTitle('Message link')
-                            .setURL(newMessage.url)
-                            .setDescription(description)
-                            .setFooter('Message edit', newMessage.author.avatarURL())
-                            .setTimestamp()
-                    );
-                }
+                // Not that necessary
+                //
+                // const extra = '\n\nNow is:\n' + newMessage.content;
+                //
+                // if ((description + extra).length <= 2048) {
+                //     description += extra;
+                // }
             }
+
+            channel.send(
+                new MessageEmbed()
+                    .setTitle('Message link')
+                    .setURL(newMessage.url)
+                    .setDescription(description)
+                    .setFooter('Message edit', newMessage.author.avatarURL())
+                    .setTimestamp()
+            );
         }
     }
 
@@ -96,33 +136,32 @@ class GuildLogger {
         if (!message.guild) return;
 
         for (const listener of this.listeners.MESSAGE_DELETE) {
-            if (listener.guildId === message.guild.id) {
-                const channel = message.guild.channels.cache.get(listener.channelId);
+            if (listener.guildId === message.guild.id) continue;
 
-                if (channel) {
-                    let description = `<@${message.author.id}> deleted a message in <#${message.channel.id}>`;
+            const channel = message.guild.channels.cache.get(listener.channelId);
+            if (!channel) continue;
 
-                    if (message.content) {
-                        description += `\n\n${message.content}`;
-                    }
+            let description = `<@${message.author.id}> deleted a message in <#${message.channel.id}>`;
 
-                    channel.send(
-                        new MessageEmbed()
-                            .setTitle('Message link')
-                            .setURL(message.url)
-                            .setDescription(description)
-                            .setFooter('Message delete', message.author.avatarURL())
-                            .setTimestamp()
-                    );
+            if (message.content) {
+                description += `\n\n${message.content}`;
+            }
 
-                    for (const attachment of message.attachments.values()) {
-                        channel.send({
-                            files: [
-                                attachment
-                            ]
-                        });
-                    }
-                }
+            channel.send(
+                new MessageEmbed()
+                    .setTitle('Message link')
+                    .setURL(message.url)
+                    .setDescription(description)
+                    .setFooter('Message delete', message.author.avatarURL())
+                    .setTimestamp()
+            );
+
+            for (const attachment of message.attachments.values()) {
+                channel.send({
+                    files: [
+                        attachment
+                    ]
+                });
             }
         }
     }
@@ -132,16 +171,29 @@ class GuildLogger {
         const hasJoined = prevState.channelID == undefined;
         const hasLeft = curState.channelID == undefined;
 
-        if (hasJoined) {
-            const { guild, id: userId, channelID: channelId } = curState;
+        const startedStreaming = !prevState.streaming && curState.streaming;
+        const stoppedStreaming = prevState.streaming && !curState.streaming;
 
+        const { guild, id: userId, channelID: channelId } = prevState;
+
+        if (hasJoined) {
             this.onUserJoinVoice({ guild, userId, channelId });
+            return;
         }
 
         if (hasLeft) {
-            const { guild, id: userId, channelID: channelId } = prevState;
-
             this.onUserLeaveVoice({ guild, userId, channelId });
+            return;
+        }
+
+        if (startedStreaming) {
+            this.onUserStartStreaming({ guild, userId, channelId });
+            return;
+        }
+
+        if (stoppedStreaming) {
+            this.onUserStopStreaming({ guild, userId, channelId });
+            return;
         }
     }
 
@@ -149,24 +201,24 @@ class GuildLogger {
         if (!this.listeners.VOICE_JOIN) return;
 
         for (const listener of this.listeners.VOICE_JOIN) {
-            if (listener.guildId === guild.id) {
-                const channel = guild.channels.cache.get(listener.channelId);
-                const voiceChannel = guild.channels.cache.get(channelId);
-                const member = guild.members.cache.get(userId);
+            if (listener.guildId !== guild.id) continue;
 
-                if (channel && voiceChannel && member) {
-                    channel.send(
-                        new MessageEmbed()
-                            .setDescription(`<@${userId}> joined the voice channel ${this.bot.fmt.bold(voiceChannel.name)}`)
-                            .setFooter('User voice channel join', member.user.avatarURL())
-                            .setTimestamp()
-                    );
-                } else {
-                    console.log('Missing a cache entry in log event');
-                    console.log(channel);
-                    console.log(voiceChannel);
-                    console.log(member);
-                }
+            const channel = guild.channels.cache.get(listener.channelId);
+            const voiceChannel = guild.channels.cache.get(channelId);
+            const member = guild.members.cache.get(userId);
+
+            if (channel && voiceChannel && member) {
+                channel.send(
+                    new MessageEmbed()
+                        .setDescription(`<@${userId}> joined the voice channel ${this.bot.fmt.bold(voiceChannel.name)}`)
+                        .setFooter('Voice join', member.user.avatarURL())
+                        .setTimestamp()
+                );
+            } else {
+                console.log('Missing a cache entry in log event');
+                console.log(channel);
+                console.log(voiceChannel);
+                console.log(member);
             }
         }
     }
@@ -175,24 +227,76 @@ class GuildLogger {
         if (!this.listeners.VOICE_LEAVE) return;
 
         for (const listener of this.listeners.VOICE_LEAVE) {
-            if (listener.guildId === guild.id) {
-                const channel = guild.channels.cache.get(listener.channelId);
-                const voiceChannel = guild.channels.cache.get(channelId);
-                const member = guild.members.cache.get(userId);
+            if (listener.guildId !== guild.id) continue;
 
-                if (channel && voiceChannel && member) {
-                    channel.send(
-                        new MessageEmbed()
-                            .setDescription(`<@${userId}> left the voice channel ${this.bot.fmt.bold(voiceChannel.name)}`)
-                            .setFooter('User voice channel leave', member.user.avatarURL())
-                            .setTimestamp()
-                    );
-                } else {
-                    console.log('Missing a cache entry in log event');
-                    console.log(channel);
-                    console.log(voiceChannel);
-                    console.log(member);
-                }
+            const channel = guild.channels.cache.get(listener.channelId);
+            const voiceChannel = guild.channels.cache.get(channelId);
+            const member = guild.members.cache.get(userId);
+
+            if (channel && voiceChannel && member) {
+                channel.send(
+                    new MessageEmbed()
+                        .setDescription(`<@${userId}> left the voice channel ${this.bot.fmt.bold(voiceChannel.name)}`)
+                        .setFooter('Voice leave', member.user.avatarURL())
+                        .setTimestamp()
+                );
+            } else {
+                console.log('Missing a cache entry in log event');
+                console.log(channel);
+                console.log(voiceChannel);
+                console.log(member);
+            }
+        }
+    }
+
+    onUserStartStreaming({ guild, channelId, userId }) {
+        if (!this.listeners.STREAM_START) return;
+
+        for (const listener of this.listeners.STREAM_START) {
+            if (listener.guildId !== guild.id) continue;
+
+            const channel = guild.channels.cache.get(listener.channelId);
+            const voiceChannel = guild.channels.cache.get(channelId);
+            const member = guild.members.cache.get(userId);
+
+            if (channel && voiceChannel && member) {
+                channel.send(
+                    new MessageEmbed()
+                        .setDescription(`<@${userId}> started streaming in ${this.bot.fmt.bold(voiceChannel.name)}`)
+                        .setFooter('Stream start', member.user.avatarURL())
+                        .setTimestamp()
+                );
+            } else {
+                console.log('Missing a cache entry in log event');
+                console.log(channel);
+                console.log(voiceChannel);
+                console.log(member);
+            }
+        }
+    }
+
+    onUserStopStreaming({ guild, userId, channelId}) {
+        if (!this.listeners.STREAM_END) return;
+
+        for (const listener of this.listeners.STREAM_END) {
+            if (listener.guildId !== guild.id) continue;
+
+            const channel = guild.channels.cache.get(listener.channelId);
+            const voiceChannel = guild.channels.cache.get(channelId);
+            const member = guild.members.cache.get(userId);
+
+            if (channel && voiceChannel && member) {
+                channel.send(
+                    new MessageEmbed()
+                        .setDescription(`<@${userId}> stopped streaming in ${this.bot.fmt.bold(voiceChannel.name)}`)
+                        .setFooter('Stream end', member.user.avatarURL())
+                        .setTimestamp()
+                );
+            } else {
+                console.log('Missing a cache entry in log event');
+                console.log(channel);
+                console.log(voiceChannel);
+                console.log(member);
             }
         }
     }
