@@ -6,6 +6,20 @@ const { Worker } = require('worker_threads');
 const Plugin = require('../../structs/Plugin');
 const FormatterPlugin = require('../fmt');
 
+const UNICODE_TO_EMOJI = {
+    '󰀅': ':eyeball:',
+    '󰀯': ':wormhole:',
+    '󰀈': ':fire:',
+    '󰀉': ':ghost:',
+    '󰀍': ':heart:',
+    '󰀁': ':beefalo:'
+};
+
+const EMOJI_TO_UNICODE = {};
+for (const k in UNICODE_TO_EMOJI) {
+    EMOJI_TO_UNICODE[UNICODE_TO_EMOJI[k]] = k;
+}
+
 class WorkerManager {
     constructor({ path }) {
         this.worker = new Worker(path);
@@ -25,7 +39,7 @@ class WorkerManager {
 class ServerTrackerPlugin extends Plugin {
     static get deps() {
         return [
-            FormatterPlugin,
+            FormatterPlugin
         ];
     }
 
@@ -352,14 +366,18 @@ class ServerTracker {
         };
     }
 
+    // TOUSE: To avoid re-sending an online message once bot restarts
+    // while server is online
+    deformatName(name) {
+        const regex = new RegExp(Object.keys(EMOJI_TO_UNICODE.join('|')), 'g');
+
+        return name.replace(regex, match => EMOJI_TO_UNICODE[match]);
+    }
+
     formatName(name) {
-        return name
-            .replace(/󰀅/g, ':eyeball:')
-            .replace(/󰀯/g, ':wormhole:')
-            .replace(/󰀈/g, ':fire:')
-            .replace(/󰀉/g, ':ghost:')
-            .replace(/󰀍/g, ':heart:')
-            .replace(/󰀁/g, ':beefalo:');
+        const regex = new RegExp(Object.keys(UNICODE_TO_EMOJI.join('|')), 'g');
+
+        return name.replace(regex, match => UNICODE_TO_EMOJI[match]);
     }
 
     getStatusEmoji(event) {
@@ -373,17 +391,6 @@ class ServerTracker {
             default:
                 // return ':black_circle:';
                 return '⚫';
-        }
-    }
-
-    getStatus(event) {
-        switch(event) {
-            case 'UP':
-                return ':white_check_mark: Online!';
-            case 'DOWN':
-                return ':x: Offline';
-            default:
-                return 'Ehhhh?';
         }
     }
 
