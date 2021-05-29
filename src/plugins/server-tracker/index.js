@@ -420,7 +420,7 @@ class ServerTracker {
         if (result.kind === 'error') {
             throw result.error;
         } else {
-            return servers.payload;
+            return result.payload;
         }
     }
 }

@@ -98,7 +98,6 @@ async function doFetch(meta) {
     console.timeEnd('deserializing');
 
     return servers;
-    parentPort.postMessage(servers);
 }
 
 parentPort.on('message', async data => {
