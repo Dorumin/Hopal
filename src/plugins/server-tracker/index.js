@@ -369,13 +369,13 @@ class ServerTracker {
     // TOUSE: To avoid re-sending an online message once bot restarts
     // while server is online
     deformatName(name) {
-        const regex = new RegExp(Object.keys(EMOJI_TO_UNICODE.join('|')), 'g');
+        const regex = new RegExp(Object.keys(EMOJI_TO_UNICODE).join('|'), 'g');
 
         return name.replace(regex, match => EMOJI_TO_UNICODE[match]);
     }
 
     formatName(name) {
-        const regex = new RegExp(Object.keys(UNICODE_TO_EMOJI.join('|')), 'g');
+        const regex = new RegExp(Object.keys(UNICODE_TO_EMOJI).join('|'), 'g');
 
         return name.replace(regex, match => UNICODE_TO_EMOJI[match]);
     }
