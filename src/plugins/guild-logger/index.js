@@ -1,4 +1,4 @@
-const { MessageEmbed } = require('discord.js');
+const { MessageEmbed, MessageAttachment } = require('discord.js');
 const Plugin = require('../../structs/Plugin');
 const FormatterPlugin = require('../fmt');
 
@@ -50,6 +50,7 @@ class GuildLogger {
 
     onReady() {
         this.bot.client.on('emojiCreate', this.onEmojiCreate.bind(this));
+        this.bot.client.on('guildUpdate', this.onGuildUpdate.bind(this));
         this.bot.client.on('messageUpdate', this.onMessageUpdate.bind(this));
         this.bot.client.on('messageDelete', this.onMessageDelete.bind(this));
         this.bot.client.on('voiceStateUpdate', this.onVoiceStateUpdate.bind(this));
@@ -65,18 +66,12 @@ class GuildLogger {
             const channel = emoji.guild.channels.cache.get(listener.channelId);
             if (!channel) continue;
 
-            console.log(emoji);
-
             let author = emoji.author;
             if (!author) {
                 try {
                     author = await emoji.fetchAuthor();
-                } catch(e) {
-                    console.log(e);
-                }
+                } catch(e) {}
             }
-
-            console.log(author);
 
             let description;
             if (author) {
@@ -85,7 +80,7 @@ class GuildLogger {
                 description = `The ${emoji} emoji was created`;
             }
 
-            channel.send(
+            await channel.send(
                 new MessageEmbed()
                     .setDescription(description)
                     .setImage(emoji.url)
@@ -95,7 +90,67 @@ class GuildLogger {
         }
     }
 
-    onMessageUpdate(oldMessage, newMessage) {
+    onGuildUpdate(oldGuild, newGuild) {
+        const changedIcon = oldGuild.icon !== newGuild.icon;
+
+        if (changedIcon) {
+            this.onGuildIconChange(oldGuild, newGuild);
+        }
+    }
+
+    async onGuildIconChange(oldGuild, newGuild) {
+        if (!this.listeners.GUILD_ICON_CHANGE) return;
+
+        for (const listener of this.listeners.GUILD_ICON_CHANGE) {
+            if (listener.guildId !== newGuild.id) continue;
+
+            const channel = newGuild.channels.cache.get(listener.channelId);
+            if (!channel) continue;
+
+            await channel.send(
+                // This embed has duplicate thumbnail and footer icon
+                // I believe footer icons are so smol they're saved forever,
+                // while thumbnails are cached in the media proxy for a bit
+                // Eventually the old server icon would be deleted,
+                // and it will live on in the footer
+                // The new icon is uploaded directly
+                new MessageEmbed()
+                    .setDescription('The guild icon was changed')
+                    .setImage(
+                        oldGuild.iconURL({
+                            format: 'png',
+                            dynamic: true,
+                            size: 2048
+                        })
+                    )
+                    .setFooter('Guild icon change',
+                        oldGuild.iconURL({
+                            format: 'png',
+                            dynamic: true,
+                            size: 2048
+                        })
+                    )
+                    .setTimestamp()
+            );
+
+            const newIconAnim = newGuild.icon.startsWith('a_');
+
+            await channel.send('New icon:', {
+                files: [
+                    new MessageAttachment(
+                        newGuild.iconURL({
+                            format: 'png',
+                            dynamic: true,
+                            size: 2048
+                        }),
+                        `icon.${newIconAnim ? 'png' : 'gif'}`
+                    )
+                ]
+            });
+        }
+    }
+
+    async onMessageUpdate(oldMessage, newMessage) {
         if (!this.listeners.MESSAGE_UPDATE) return;
         if (!newMessage.guild) return;
         if (oldMessage.content === newMessage.content) return;
@@ -120,7 +175,7 @@ class GuildLogger {
                 // }
             }
 
-            channel.send(
+            await channel.send(
                 new MessageEmbed()
                     .setTitle('Message link')
                     .setURL(newMessage.url)
@@ -131,7 +186,7 @@ class GuildLogger {
         }
     }
 
-    onMessageDelete(message) {
+    async onMessageDelete(message) {
         if (!this.listeners.MESSAGE_DELETE) return;
         if (!message.guild) return;
 
@@ -144,10 +199,21 @@ class GuildLogger {
             let description = `<@${message.author.id}> deleted a message in <#${message.channel.id}>`;
 
             if (message.content) {
-                description += `\n\n${message.content}`;
+                description += `\n\n`;
+
+                if (message.reference) {
+                    const { guildID, channelID, messageID } = message.reference;
+
+                    description += this.bot.fmt.link(
+                        'Reply to',
+                        `https://discord.com/channels/${guildID}/${channelID}/${messageID}`
+                    ) + '\n';
+                }
+
+                description += message.content;
             }
 
-            channel.send(
+            await channel.send(
                 new MessageEmbed()
                     .setTitle('Message link')
                     .setURL(message.url)
@@ -157,7 +223,7 @@ class GuildLogger {
             );
 
             for (const attachment of message.attachments.values()) {
-                channel.send({
+                await channel.send({
                     files: [
                         attachment
                     ]
@@ -197,7 +263,7 @@ class GuildLogger {
         }
     }
 
-    onUserJoinVoice({ guild, userId, channelId }) {
+    async onUserJoinVoice({ guild, userId, channelId }) {
         if (!this.listeners.VOICE_JOIN) return;
 
         for (const listener of this.listeners.VOICE_JOIN) {
@@ -208,7 +274,7 @@ class GuildLogger {
             const member = guild.members.cache.get(userId);
 
             if (channel && voiceChannel && member) {
-                channel.send(
+                await channel.send(
                     new MessageEmbed()
                         .setDescription(`<@${userId}> joined the voice channel ${this.bot.fmt.bold(voiceChannel.name)}`)
                         .setFooter('Voice join', member.user.avatarURL())
@@ -223,7 +289,7 @@ class GuildLogger {
         }
     }
 
-    onUserLeaveVoice({ guild, userId, channelId }) {
+    async onUserLeaveVoice({ guild, userId, channelId }) {
         if (!this.listeners.VOICE_LEAVE) return;
 
         for (const listener of this.listeners.VOICE_LEAVE) {
@@ -234,7 +300,7 @@ class GuildLogger {
             const member = guild.members.cache.get(userId);
 
             if (channel && voiceChannel && member) {
-                channel.send(
+                await channel.send(
                     new MessageEmbed()
                         .setDescription(`<@${userId}> left the voice channel ${this.bot.fmt.bold(voiceChannel.name)}`)
                         .setFooter('Voice leave', member.user.avatarURL())
@@ -249,7 +315,7 @@ class GuildLogger {
         }
     }
 
-    onUserStartStreaming({ guild, channelId, userId }) {
+    async onUserStartStreaming({ guild, channelId, userId }) {
         if (!this.listeners.STREAM_START) return;
 
         for (const listener of this.listeners.STREAM_START) {
@@ -260,7 +326,7 @@ class GuildLogger {
             const member = guild.members.cache.get(userId);
 
             if (channel && voiceChannel && member) {
-                channel.send(
+                await channel.send(
                     new MessageEmbed()
                         .setDescription(`<@${userId}> started streaming in ${this.bot.fmt.bold(voiceChannel.name)}`)
                         .setFooter('Stream start', member.user.avatarURL())
@@ -275,7 +341,7 @@ class GuildLogger {
         }
     }
 
-    onUserStopStreaming({ guild, userId, channelId}) {
+    async onUserStopStreaming({ guild, userId, channelId}) {
         if (!this.listeners.STREAM_END) return;
 
         for (const listener of this.listeners.STREAM_END) {
@@ -286,7 +352,7 @@ class GuildLogger {
             const member = guild.members.cache.get(userId);
 
             if (channel && voiceChannel && member) {
-                channel.send(
+                await channel.send(
                     new MessageEmbed()
                         .setDescription(`<@${userId}> stopped streaming in ${this.bot.fmt.bold(voiceChannel.name)}`)
                         .setFooter('Stream end', member.user.avatarURL())
