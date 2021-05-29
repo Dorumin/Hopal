@@ -415,9 +415,13 @@ class ServerTracker {
             }
         });
 
-        const servers = await this.worker.nextMessage();
+        const result = await this.worker.nextMessage();
 
-        return servers;
+        if (result.kind === 'error') {
+            throw result.error;
+        } else {
+            return servers.payload;
+        }
     }
 }
 

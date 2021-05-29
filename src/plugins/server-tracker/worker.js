@@ -97,13 +97,26 @@ async function doFetch(meta) {
     });
     console.timeEnd('deserializing');
 
+    return servers;
     parentPort.postMessage(servers);
 }
 
-parentPort.on('message', data => {
+parentPort.on('message', async data => {
     switch (data.type) {
         case 'fetch':
-            doFetch(data.payload.meta);
+            try {
+                const servers = doFetch(data.payload.meta);
+
+                parentPort.postMessage({
+                    kind: 'success',
+                    payload: servers
+                });
+            } catch(e) {
+                parentPort.postMessage({
+                    kind: 'error',
+                    error: e
+                });
+            }
             break;
     }
 });
