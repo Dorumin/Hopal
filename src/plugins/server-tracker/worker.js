@@ -30,7 +30,7 @@ async function doFetch(meta) {
         // Id is used to fetch more data about the server if the name matches
         const id = row.getAttribute('id');
 
-        // firstData contains server type, flag, country, name, and outdated/modded
+        // firstData contains server type, flag, country, name, and icons
         const firstData = row.childNodes[0];
 
         // platformData contains the platform the server hosts for
@@ -51,10 +51,9 @@ async function doFetch(meta) {
         // Get country name and code
         const flag = firstData.childNodes[1];
         const country = flag.getAttribute('data-tooltip');
-        const countryCode = flag.getAttribute('class').split(' ')
-            .pop()
-            .split('-')
-            .pop();
+        const countryClass = flag.getAttribute('class');
+        const countryCodeDashIndex = countryClass.lastIndexOf('-');
+        const countryCode = countryClass.slice(countryCodeDashIndex + 1);
 
         // Get platform: Steam, WeGame, PS4, more?
         const platform = platformData.firstChild.text;
