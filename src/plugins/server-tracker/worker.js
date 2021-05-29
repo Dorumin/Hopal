@@ -105,7 +105,7 @@ parentPort.on('message', async data => {
     switch (data.type) {
         case 'fetch':
             try {
-                const servers = doFetch(data.payload.meta);
+                const servers = await doFetch(data.payload.meta);
 
                 parentPort.postMessage({
                     kind: 'success',
