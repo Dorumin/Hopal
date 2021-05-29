@@ -136,7 +136,7 @@ class GuildLogger {
         if (!message.guild) return;
 
         for (const listener of this.listeners.MESSAGE_DELETE) {
-            if (listener.guildId === message.guild.id) continue;
+            if (listener.guildId !== message.guild.id) continue;
 
             const channel = message.guild.channels.cache.get(listener.channelId);
             if (!channel) continue;
