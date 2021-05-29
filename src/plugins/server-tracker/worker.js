@@ -23,64 +23,79 @@ async function doFetch(meta) {
     console.timeEnd('parsing');
 
     console.time('deserializing');
-    const servers = document.querySelectorAll('.list > tr')
-        .map(row => {
-            const firstData = row.querySelector('td');
+    const servers = document.querySelectorAll('.list > tr').map(row => {
+        // Highly optimized implementation to avoid querySelectors
+        // View older commits to find a more understandable version
 
-            const id = row.getAttribute('id');
+        // Id is used to fetch more data about the server if the name matches
+        const id = row.getAttribute('id');
 
-            // Get name, no error checking
-            const name = firstData.querySelector('.fnm').text;
+        // firstData contains server type, flag, country, name, and outdated/modded
+        const firstData = row.childNodes[0];
 
-            // Get country name and code
-            const flag = firstData.querySelector('.flag-icon');
-            const country = flag.getAttribute('data-tooltip');
-            const countryCode = flag.getAttribute('class').split(' ')
-                .pop()
-                .split('-')
-                .pop();
+        // platformData contains the platform the server hosts for
+        const platformData = row.childNodes[1];
 
-            // Get platform: Steam, WeGame, PS4, more?
-            const platform = row.querySelector('.fpf').text;
+        // playerData contains player info and a lock if it's passworded
+        const playerData = row.childNodes[2];
 
-            // Get player count, fpy is also used to check for password
-            const fpy = row.querySelector('.fpy');
-            const playersText = fpy.firstChild.text;
-            const match = playersText.match(/(\d+)\/(\d+)/);
-            const playerCount = Number(match[1]);
-            const maxPlayers = Number(match[2]);
+        // modeData contains just a single text node with endless/survival
+        const modeData = row.childNodes[3];
 
-            // Get gamemode (normal/endless) and current season
-            const mode = row.querySelector('.fmd').text;
-            const season = row.querySelector('.fss').text;
+        // seasonData contains the current season
+        const seasonData = row.childNodes[4];
 
-            // Get some flags: modded, outdated, pvp, official, passworded
-            const icons = firstData.querySelectorAll('.mico');
-            const modded = icons.some(icon => icon.text === 'settings');
-            const outdated = icons.some(icon => icon.text === 'warning');
-            const pvp = icons.some(icon => icon.text === 'restaurant_menu');
-            const official = icons.some(icon => icon.text === 'check_circle');
+        // Get name
+        const name = firstData.childNodes[2].firstChild.text;
 
-            // Player count can have a lock icon if it's passworded
-            const passworded = fpy.querySelector('.mico') !== null;
+        // Get country name and code
+        const flag = firstData.childNodes[1];
+        const country = flag.getAttribute('data-tooltip');
+        const countryCode = flag.getAttribute('class').split(' ')
+            .pop()
+            .split('-')
+            .pop();
 
-            return {
-                id,
-                country,
-                countryCode,
-                platform,
-                playerCount,
-                maxPlayers,
-                name,
-                mode,
-                season,
-                modded,
-                outdated,
-                pvp,
-                official,
-                passworded
-            };
-        });
+        // Get platform: Steam, WeGame, PS4, more?
+        const platform = platformData.firstChild.text;
+
+        // Get player count, fpy is also used to check for password
+        const playersText = playerData.firstChild.text;
+        const index = playersText.indexOf('/');
+        const playerCount = Number(playersText.slice(0, index));
+        const maxPlayers = Number(playersText.slice(index + 1));
+
+        // Get gamemode (normal/endless) and current season
+        const mode = modeData.firstChild.text;
+        const season = seasonData.firstChild.text;
+
+        // Get some flags: modded, outdated, pvp, official, passworded
+        const icons = firstData.childNodes.slice(4);
+        const modded = icons.some(icon => icon.text === 'settings');
+        const outdated = icons.some(icon => icon.text === 'warning');
+        const pvp = icons.some(icon => icon.text === 'restaurant_menu');
+        const official = icons.some(icon => icon.text === 'check_circle');
+
+        // Player count can have a lock icon if it's passworded
+        const passworded = playerData.childNodes.length === 2;
+
+        return {
+            id,
+            country,
+            countryCode,
+            platform,
+            playerCount,
+            maxPlayers,
+            name,
+            mode,
+            season,
+            modded,
+            outdated,
+            pvp,
+            official,
+            passworded
+        };
+    });
     console.timeEnd('deserializing');
 
     parentPort.postMessage(servers);
