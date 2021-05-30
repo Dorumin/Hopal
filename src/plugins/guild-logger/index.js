@@ -1,4 +1,4 @@
-const { MessageEmbed, MessageAttachment } = require('discord.js');
+const { MessageEmbed, MessageAttachment, SnowflakeUtil } = require('discord.js');
 const Plugin = require('../../structs/Plugin');
 const FormatterPlugin = require('../fmt');
 
@@ -196,7 +196,28 @@ class GuildLogger {
             const channel = message.guild.channels.cache.get(listener.channelId);
             if (!channel) continue;
 
-            let description = `<@${message.author.id}> deleted a message in <#${message.channel.id}>`;
+            let description = `A message by <@${message.author.id}> ` +
+                `was deleted in <#${message.channel.id}>`;
+
+            try {
+                // Attempt to find out the user who deleted the message
+                const auditLogs = await message.guild.fetchAuditLogs({
+                    limit: 1
+                });
+                const latest = auditLogs.entries.first();
+                const elapsed = Date.now() - SnowflakeUtil.deconstruct(latest.id).timestamp;
+
+                if (
+                    latest.action === 'MESSAGE_DELETE' &&
+                    latest.target.id === message.author.id &&
+                    latest.extra.channel.id === message.channel.id &&
+                    elapsed < 1000
+                ) {
+                    description = `A message by <@${message.author.id}> ` +
+                        `was deleted in <#${message.channel.id}> ` +
+                        `by <@${latest.executor.id}>`;
+                }
+            } catch(e) {}
 
             if (message.content) {
                 description += `\n\n`;
