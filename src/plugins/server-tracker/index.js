@@ -5,6 +5,7 @@ const { Worker } = require('worker_threads');
 
 const Plugin = require('../../structs/Plugin');
 const FormatterPlugin = require('../fmt');
+const LoggerPlugin = require('../logger');
 
 const UNICODE_TO_EMOJI = {
     '󰀅': ':eyeball:',
@@ -22,16 +23,36 @@ for (const k in UNICODE_TO_EMOJI) {
 
 class WorkerManager {
     constructor({ path }) {
-        this.worker = new Worker(path);
+        this.path = path;
+        this.messages = [];
+
+        this.startWorker();
+    }
+
+    startWorker() {
+        this.worker = new Worker(this.path);
+        this.worker.on('error', (err) => {
+            console.error(err);
+
+            this.startWorker();
+        });
+
+        for (const pending of this.messages) {
+            this.worker.postMessage(pending);
+        }
     }
 
     postMessage(data) {
         this.worker.postMessage(data);
+        this.messages.push(data);
     }
 
     nextMessage() {
         return new Promise(resolve => {
-            this.worker.once('message', resolve);
+            this.worker.once('message', msg => {
+                this.messages.shift();
+                resolve(msg);
+            });
         });
     }
 }
@@ -39,7 +60,8 @@ class WorkerManager {
 class ServerTrackerPlugin extends Plugin {
     static get deps() {
         return [
-            FormatterPlugin
+            FormatterPlugin,
+            LoggerPlugin
         ];
     }
 
@@ -227,6 +249,10 @@ class ServerTracker {
             };
         });
 
+        const serverData = serverTable.childNodes[5].firstChild;
+        const version = serverData.childNodes[0].text;
+        const ip = serverData.childNodes[4].text.trim();
+
         const modCount = document.querySelectorAll('#mods .col').length;
 
         const dedicatedRow = serverTable.childNodes[3];
@@ -238,7 +264,9 @@ class ServerTracker {
             days,
             players,
             dedicated,
-            modCount
+            modCount,
+            version,
+            ip
         };
     }
 
@@ -254,6 +282,8 @@ class ServerTracker {
                 server.players = serverData.players;
                 server.modCount = serverData.modCount;
                 server.dedicated = serverData.dedicated;
+                server.version = serverData.version;
+                server.ip = serverData.ip;
                 // This isn't strictly necessary, but it doesn't hurt to avoid silly
                 // stuff like a different player count than player list
                 server.playerCount = serverData.players.length;
@@ -266,6 +296,13 @@ class ServerTracker {
                 if (e.response) {
                     console.log('Body', e.response.body);
                 }
+
+                this.onEvent({
+                    ...data,
+                    event: 'DOWN'
+                });
+
+                return;
             }
         }
 
