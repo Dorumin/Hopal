@@ -282,10 +282,13 @@ class EvalCommand extends OPCommand {
         return {
             send: (...args) => {
                 if (
-                    args.length !== 1
-                    || args[0].embed
-                    || args[0].files
-                    || args[0] instanceof MessageEmbed
+                    args[0] &&
+                    (
+                        args.length !== 1
+                        || args[0].embed
+                        || args[0].files
+                        || args[0] instanceof MessageEmbed
+                    )
                 ) {
                     const promise = message.channel.send(...args);
 
@@ -577,7 +580,7 @@ class EvalCommand extends OPCommand {
         if (typeof result === 'undefined') {
             // Do not send undefined results for
             // async payloads that are longer than one expression
-            if (code.isAsync && !code.isExpression) return;
+            if (code && code.isAsync && !code.isExpression) return;
 
             return await channel.send('undefined');
         }
