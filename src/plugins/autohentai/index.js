@@ -259,7 +259,7 @@ class AutoHentai {
 
         if (posts.length === 0) {
             return [
-                `Error: ${xml} | Offset: ${offset} | Tag: ${tag}`
+                `Error: ${xml} | Offset: ${startId} | Tag: ${tag} | Query: ${searchTags}`
             ];
         }
 
