@@ -9,6 +9,91 @@ const FormatterPlugin = require('../../fmt');
 
 const swallow = () => {};
 
+class Inspection {
+    constructor({ source, depth }) {
+        this.source = source;
+        this.depth = depth;
+        this.cache = {
+            depth: -1,
+            text: ''
+        };
+    }
+
+    inspect(depth) {
+        let inspection = util.inspect(this.source, {
+            depth: depth,
+            compact: false
+        });
+
+        // Double the indent, from 2 spaces to 4
+        inspection = inspection.replace(/^\s+/gm, '$&$&');
+
+        return inspection;
+    }
+
+    shallower() {
+        this.depth--;
+
+        return this;
+    }
+
+    deeper() {
+        this.depth++;
+
+        return this;
+    }
+
+    canGoDeeper() {
+        const nextInspection = this.inspect(this.depth + 1);
+
+        if (nextInspection.length > 8388269) {
+            return false;
+        }
+
+        if (nextInspection === this.cache.text) {
+            return false;
+        }
+
+        this.cache = {
+            depth: this.depth + 1,
+            text: nextInspection
+        };
+
+        return true;
+    }
+
+    text() {
+        if (this.cache.depth === this.depth) {
+            return this.cache.text;
+        }
+
+        const inspection = this.inspect(this.depth);
+
+        this.cache = {
+            depth: this.depth,
+            text: inspection
+        };
+
+        return inspection;
+    }
+}
+
+class Code {
+    constructor({ code, isExpression, isAsync }) {
+        this.code = code;
+        this.isExpression = isExpression;
+        this.isAsync = isAsync;
+    }
+}
+
+class CodeBlock {
+    constructor({ code, isFile, ext }) {
+        this.code = code;
+        this.isFile = isFile;
+        this.ext = ext;
+    }
+}
+
 class EvalCommand extends OPCommand {
     static get deps() {
         return [
@@ -41,27 +126,12 @@ class EvalCommand extends OPCommand {
         this.stupidRequireCache = new Map();
 	}
 
-	inspect(object) {
-		let str = '';
-		let depth = 4;
-
-		while (depth--) {
-			str = util.inspect(object, {
-                depth,
-                compact: false
-            });
-
-            // Discord 8mb file upload limit
-            if (str.length < 8388269) break;
-
-            // Or, alternatively, the message limit
-			// if (str.length < 2000) break;
-		}
-
-        // Double the indent, from 2 spaces to 4
-        str = str.replace(/^\s+/gm, '$&$&');
-
-		return str;
+    // 8mb = 8388269, message limit = 2000
+	inspect(object, depth = 3) {
+        return new Inspection({
+            depth,
+            source: object
+        });
 	}
 
     require(channel, name) {
@@ -201,7 +271,11 @@ class EvalCommand extends OPCommand {
             `})()`;
         }
 
-        return code;
+        return new Code({
+            code,
+            isExpression,
+            isAsync
+        });
     }
 
     getVars(message) {
@@ -290,7 +364,11 @@ class EvalCommand extends OPCommand {
 
         let result;
         try {
-            result = eval(code);
+            result = eval(code.code);
+
+            if (code.isAsync) {
+                result = await result;
+            }
         } catch(e) {
             result = new Error('');
             result.inner = e;
@@ -307,30 +385,6 @@ class EvalCommand extends OPCommand {
         return {
             result
         };
-    }
-
-    predictExtension(text) {
-        if (text.charAt(0) === '<') {
-            try {
-                parse(text);
-
-                return 'html';
-            } catch(e) {
-                // fallthrough
-            }
-        }
-
-        if (text.charAt(0) === '{') {
-            try {
-                JSON.parse(text);
-
-                return 'json';
-            } catch(e) {
-                // fallthrough
-            }
-        }
-
-        return 'txt';
     }
 
     indent(tabs) {
@@ -442,15 +496,21 @@ class EvalCommand extends OPCommand {
             // Fix it by replacing it with &ref at the start of lines with ws
             // and after colons
 
-            // Capturing group 1: colon and whitespace, or start of line ws
+            // Capturing group 1: colon/arrow and ws, or start of line ws
             // Capturing group 2: reference number
-            return contents.replace(/(^\s*|:\s*)<ref \*(\d+)>/gm, '$1<&ref $2>');
+
+            // Format 1: $1<&ref $2>
+            // Format 2: $1<ref $2 />
+
+            // Format 1 makes more sense as & is common for refs
+            // But format 2 has some syntax highlighting because of JSX
+            return contents.replace(/(^\s*|:\s*|=>\s*)<ref \*(\d+)>/gm, '$1<ref $2 />');
         }
 
         return contents;
     }
 
-    sendExpand(channel, string, lang) {
+    getCodeBlock(string, lang) {
         let predicted;
         if (lang === undefined) {
             predicted = this.predictExtensionAndFormat(string);
@@ -468,21 +528,43 @@ class EvalCommand extends OPCommand {
             );
 
         if (codeBlock.length >= 2000) {
+            return new CodeBlock({
+                code: cleaned,
+                isFile: true,
+                ext: ext
+            });
+        } else {
+            return new CodeBlock({
+                code: codeBlock,
+                isFile: false,
+                ext: ext
+            });
+        }
+    }
+
+    sendCodeBlock(channel, codeBlock) {
+        if (codeBlock.isFile) {
             return channel.send({
                 files: [
                     new MessageAttachment(
-                        Buffer.from(cleaned, 'utf8'),
-                        `eval.${lang || ext}`
+                        Buffer.from(codeBlock.code, 'utf8'),
+                        `eval.${codeBlock.ext}`
                     )
                 ]
             });
         } else {
-            return channel.send(codeBlock);
+            return channel.send(codeBlock.code);
         }
     }
 
+    sendExpand(channel, string, lang) {
+        const codeBlock = this.getCodeBlock(string, lang);
+
+        return this.sendCodeBlock(channel, codeBlock);
+    }
+
     async respond(result, context) {
-        const { channel } = context;
+        const { channel, message: originalMessage } = context;
 
         if (result === null) {
             return await channel.send('null');
@@ -500,7 +582,16 @@ class EvalCommand extends OPCommand {
             return await this.sendExpand(channel, `${result}n`);
         }
 
-        if (['string', 'symbol', 'number', 'undefined'].includes(typeof result)) {
+        if (typeof result === 'string') {
+            // Send smol code block with "" for empty strings
+            if (result === '') {
+                return await this.sendExpand(channel, `""`, 'js')
+            } else {
+                return await this.sendExpand(channel, result);
+            }
+        }
+
+        if (['symbol', 'number', 'undefined'].includes(typeof result)) {
             return await this.sendExpand(channel, String(result));
         }
 
@@ -522,7 +613,7 @@ class EvalCommand extends OPCommand {
         if (result instanceof Error) {
             const inspection = this.inspect(result);
 
-            return await this.sendExpand(channel, inspection, 'apache');
+            return await this.sendExpand(channel, inspection.text(), 'apache');
         }
 
         if (result instanceof Date) {
@@ -534,30 +625,136 @@ class EvalCommand extends OPCommand {
         }
 
         if (result instanceof Promise) {
-            // Failure in this stage is not a problem
-            // As the value is only used for not posting undefined
-            // Errors will still be reported back in the inspect
-            try {
-                const value = await result;
+            // TODO: Send message of pending promise
+            // Edit it when resolved
+            // Delete and post new expanded if it goes over limit
 
-                if (value === undefined) {
-                    // Exception for promises; undefined is not echoed
-                    return;
-                }
+            // Inspect the (possibly) pending promise
+            // Send it immediately and store the temp message
+            const pendingInspection = this.inspect(result);
+            const pendingMessage = await this.sendExpand(channel, pendingInspection.text(), 'js');
+            const pendingString = 'Promise {\n    <pending>\n}';
+
+            if (pendingInspection !== pendingString) {
+                // Promise wasn't actually pending afterall
+                // It's resolved or rejected
+                // So! We can early return here
+                return pendingMessage;
+            }
+
+            // Failure in this stage is not a problem
+            // Errors will still be reported back in the 2nd inspection
+            try {
+                await result;
+
+                // We used to await here and not post if resolved with undef
+                // Not anymore, we post pending messages
+                //
+                // if (value === undefined) {
+                //     // Exception for promises; undefined is not echoed
+                //     return;
+                // }
             } catch(e) {}
 
-            // Respond with the inspection of the promise itself
+            // Respond with the inspection of the settled promise
             // So it's explicit that the value is a promise,
             // and also show the inner value of the resolved (or failed) promise
             const inspection = this.inspect(result);
+            const codeBlock = this.getCodeBlock(inspection.text(), 'js');
 
-            return await this.sendExpand(channel, inspection, 'js');
+            if (codeBlock.isFile) {
+                const [message] = await Promise.all([
+                    this.sendExpand(channel, codeBlock.code, 'js'),
+                    pendingMessage.delete()
+                ]);
+
+                return message;
+            } else {
+                return pendingMessage.edit(codeBlock.code);
+            }
         }
 
         if (typeof result === 'object') {
             const inspection = this.inspect(result);
+            const message = await this.sendExpand(channel, inspection.text(), 'js');
 
-            return await this.sendExpand(channel, inspection, 'js');
+            this.expandReactions(message, inspection, originalMessage);
+
+            return message;
+        }
+    }
+
+    async expandReactions(message, inspection, originalMessage) {
+        if (!inspection.canGoDeeper()) return;
+
+        let botReaction = await message.react('👁️');
+
+        while (true) {
+            const reactions = await message.awaitReactions(
+                (reaction, user) =>
+                    reaction.emoji.name === botReaction.emoji.name &&
+                    user.id === originalMessage.author.id,
+                {
+                    max: 1,
+                    time: 30000
+                }
+            );
+
+            if (reactions.size === 0) {
+                try {
+                    await Promise.all([
+                        // Try to remove all reactions
+                        // message.reactions.removeAll(),
+                        // Remove own reaction
+                        botReaction.users.remove()
+                    ]);
+                } catch(e) {}
+                break;
+            }
+
+            switch (reactions.first().emoji.name) {
+                case '👁️':
+
+                    const codeBlock = this.getCodeBlock(inspection.deeper().text(), 'js');
+
+                    const promises = [];
+
+                    if (codeBlock.isFile) {
+                        const [newMessage] = await Promise.all([
+                            this.sendExpand(message.channel, codeBlock.code, 'js'),
+                            message.delete()
+                        ]);
+
+
+                        message = newMessage;
+                    } else {
+                        promises.push(reactions.first().users.remove(originalMessage.author));
+                        promises.push(message.edit(codeBlock.code));
+
+                        try {
+                            await reactionRemovePromise;
+                        } catch(e) {}
+                    }
+
+                    if (!inspection.canGoDeeper()) {
+                        promises.push(botReaction.users.remove());
+
+                        try {
+                            await Promise.all(promises);
+                        } catch(e) {}
+                        return;
+                    }
+
+                    if (codeBlock.isFile) {
+                        botReaction = await message.react('👁️');
+                    }
+
+                    try {
+                        await Promise.all(promises);
+                    } catch(e) {}
+
+                    break;
+            }
         }
     }
 
