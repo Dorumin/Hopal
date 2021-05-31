@@ -563,7 +563,7 @@ class EvalCommand extends OPCommand {
         return this.sendCodeBlock(channel, codeBlock);
     }
 
-    async respond(result, context) {
+    async respond(result, context, code) {
         const { channel, message: originalMessage } = context;
 
         if (result === null) {
@@ -572,6 +572,14 @@ class EvalCommand extends OPCommand {
 
         if (Number.isNaN(result)) {
             return await channel.send('NaN');
+        }
+
+        if (typeof result === 'undefined') {
+            // Do not send undefined results for
+            // async payloads that are longer than one expression
+            if (code.isAsync && !code.isExpression) return;
+
+            return await channel.send('undefined');
         }
 
         if (this.ignoredObjects.includes(result)) {
@@ -591,7 +599,7 @@ class EvalCommand extends OPCommand {
             }
         }
 
-        if (['symbol', 'number', 'undefined'].includes(typeof result)) {
+        if (['symbol', 'number'].includes(typeof result)) {
             return await this.sendExpand(channel, String(result));
         }
 
@@ -625,17 +633,13 @@ class EvalCommand extends OPCommand {
         }
 
         if (result instanceof Promise) {
-            // TODO: Send message of pending promise
-            // Edit it when resolved
-            // Delete and post new expanded if it goes over limit
-
             // Inspect the (possibly) pending promise
             // Send it immediately and store the temp message
             const pendingInspection = this.inspect(result);
             const pendingMessage = await this.sendExpand(channel, pendingInspection.text(), 'js');
             const pendingString = 'Promise {\n    <pending>\n}';
 
-            if (pendingInspection !== pendingString) {
+            if (pendingInspection.text() !== pendingString) {
                 // Promise wasn't actually pending afterall
                 // It's resolved or rejected
                 // So! We can early return here
@@ -768,7 +772,7 @@ class EvalCommand extends OPCommand {
                 this.bot.fmt.codeBlock('apache', `${result.inner}`)
             );
         } else {
-            await this.respond(result, context);
+            await this.respond(result, context, code);
         }
 
         this.afterEval();
