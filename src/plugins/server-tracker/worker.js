@@ -46,7 +46,7 @@ async function doFetch(meta) {
         const seasonData = row.childNodes[4];
 
         // Get name
-        const name = firstData.childNodes[2].firstChild.text;
+        const name = firstData.childNodes[2].text;
 
         // Get country name and code
         const flag = firstData.childNodes[1];
@@ -56,17 +56,17 @@ async function doFetch(meta) {
         const countryCode = countryClass.slice(countryCodeDashIndex + 1);
 
         // Get platform: Steam, WeGame, PS4, more?
-        const platform = platformData.firstChild.text;
+        const platform = platformData.text;
 
         // Get player count, fpy is also used to check for password
-        const playersText = playerData.firstChild.text;
+        const playersText = playerData.text;
         const index = playersText.indexOf('/');
         const playerCount = Number(playersText.slice(0, index));
         const maxPlayers = Number(playersText.slice(index + 1));
 
         // Get gamemode (normal/endless) and current season
-        const mode = modeData.firstChild.text;
-        const season = seasonData.firstChild.text;
+        const mode = modeData.text;
+        const season = seasonData.text;
 
         // Get some flags: modded, outdated, pvp, official, passworded
         const icons = firstData.childNodes.slice(4);
