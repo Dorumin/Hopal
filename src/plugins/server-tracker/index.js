@@ -204,6 +204,8 @@ class ServerTracker {
                     }
                 }
             }
+
+            return servers;
         } catch(e) {
             console.error(e);
             console.error(e.response.body);
