@@ -100,7 +100,7 @@ class TranslateCommand extends Command {
     }
 
     extractData(content) {
-        const match = content.match(/^([a-z]{2})(?:>([a-z]{2}))?\s/);
+        const match = content.match(/^([a-z]{2})(?:>([a-z]{2}))?(\s|$)/);
 
         let text;
         let from;
