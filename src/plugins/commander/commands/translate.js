@@ -42,13 +42,31 @@ class TranslateCommand extends Command {
 
         text = this.removeMentions(text);
 
-        if (!text && message.mentions.users.size === 1) {
+        let stillNothing = true;
+        if (!text && message.reference && message.channel.id === message.reference.channelID) {
+            const referenced = await message.channel.messages.fetch(message.reference.messageID);
+
+            if (referenced.content) {
+                text = referenced.content;
+                stillNothing = false;
+            } else if (
+                referenced.embeds.length !== 0 &&
+                referenced.embeds[0].type === 'rich' &&
+                referenced.embeds[0].description
+            ) {
+                text = referenced.embeds[0].description;
+                stillNothing = false;
+            }
+        } else if (!text && message.mentions.users.size === 1) {
             const status = this.getStatus(message.mentions.users.first());
 
             if (status) {
                 text = status;
+                stillNothing = false;
             }
-        } else {
+        }
+
+        if (stillNothing) {
             // Replace any possible mentions with their cleaned up @text form
             text = this.extractData(
                 Util.cleanContent(content, message)
