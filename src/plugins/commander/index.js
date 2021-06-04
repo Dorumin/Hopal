@@ -148,10 +148,10 @@ class Commander {
     }
 
     async tryMatchCommands(message) {
-        let text = message.content.trim(),
-        prefixes = await this.getPrefixes(message.guild),
-        i = prefixes.length,
-        matched = false;
+        const text = message.content.trim();
+        const prefixes = await this.getPrefixes(message.guild);
+        let i = prefixes.length;
+        let matched = false;
 
         while (i--) {
             const prefix = prefixes[i];
@@ -165,7 +165,7 @@ class Commander {
                 while (i--) {
                     const alias = aliases[i];
                     // Ensure str[prefix..prefix+alias] == alias
-                    if (trimmed.slice(0, alias.length).toLowerCase() != alias) continue;
+                    if (trimmed.slice(0, alias.length).toLowerCase() !== alias) continue;
 
                     const code = trimmed.charCodeAt(alias.length);
                     // Return if the character after the command isn't NaN (EOF) and isn't whitespace
@@ -176,7 +176,12 @@ class Commander {
                     if (!command.bot && message.author.bot) continue;
 
                     matched = true;
-                    this.callCommand(command, message, trimmed.slice(alias.length + 1).trimLeft());
+
+                    const content = trimmed.slice(alias.length + 1).trimLeft();
+
+                    this.callCommand(command, message, content, {
+                        alias
+                    });
                 }
 
                 if (matched) break;
@@ -223,9 +228,9 @@ class Commander {
         this.callCommand(command, message, content);
     }
 
-    async callCommand(command, message, content) {
+    async callCommand(command, message, content, extra) {
         try {
-            await command.call(message, content.trim());
+            await command.call(message, content.trim(), extra);
         } catch(e) {
             const lines = e.stack.split('\n'),
             firstRelevant = lines.findIndex(line => line.includes('Commander.callCommand')),
