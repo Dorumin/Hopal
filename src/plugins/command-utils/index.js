@@ -1,4 +1,3 @@
-const got = require('got');
 const Plugin = require('../../structs/Plugin');
 
 class CommandUtilsPlugin extends Plugin {
