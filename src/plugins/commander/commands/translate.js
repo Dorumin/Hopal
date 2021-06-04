@@ -25,12 +25,20 @@ class TranslateCommand extends Command {
             'de', // German/D
             'el', // Greek
             'ja', // Weeb
+            'ko', // Korean
+            'ms', // Malaysian
             'pl', // Polish
             'pt', // Portugese
             'ru', // Russki
             'sr', // Serbian
             'es', // Spanish
         ];
+
+        this.languageMap = {
+            gr: 'el',
+            sp: 'es',
+            ch: 'zh'
+        };
     }
 
     removeMentions(text) {
@@ -79,7 +87,7 @@ class TranslateCommand extends Command {
             text
         });
 
-        message.channel.send({
+        await message.channel.send({
             embed: {
                 title: 'Google Translate',
                 url: `https://translate.google.com/?sl=${from}&tl=${to}&text=${encodeURIComponent(text)}&op=translate`,
@@ -119,6 +127,14 @@ class TranslateCommand extends Command {
             text = content;
             from = 'auto';
             to = 'en';
+        }
+
+        if (this.languageMap[from]) {
+            from = this.languageMap[from];
+        }
+
+        if (this.languageMap[to]) {
+            to = this.languageMap[to];
         }
 
         return {
