@@ -107,16 +107,20 @@ class TranslateCommand extends Command {
         }
     }
 
+    supported(lang) {
+        return this.languages.includes(lang) || this.languageMap.hasOwnProperty(lang);
+    }
+
     extractData(content) {
         const match = content.match(/^([a-z]{2})(?:>([a-z]{2}))?(\s|$)/);
 
         let text;
         let from;
         let to;
-        if (match && this.languages.includes(match[1])) {
+        if (match && this.supported(match[1])) {
             text = content.slice(match[0].length).trim();
 
-            if (match[2] && this.languages.includes(match[2])) {
+            if (match[2] && this.supported(match[2])) {
                 from = match[1];
                 to = match[2];
             } else {
