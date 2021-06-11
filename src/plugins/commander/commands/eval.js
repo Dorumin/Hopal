@@ -287,6 +287,26 @@ class EvalCommand extends OPCommand {
             `})()`;
         }
 
+        let postfixMatch;
+        while ((postfixMatch = code.match(/\.await/)) !== null) {
+            // Try to find the start of the expression
+            // We do this by backtracking to the first semicolon
+            // or the start of the string
+            // In the future this could be better
+            // by filtering out semicolons inside strings
+
+            // Warning: some real fuckin ugly index code ahead
+            const lastSemi = code.lastIndexOf(';', postfixMatch.index);
+            if (lastSemi == -1) {
+                code = `(await ` + code.slice(0, postfixMatch.index) + ')'
+                    + code.slice(postfixMatch.index + postfixMatch[0].length);
+            } else {
+                code = code.slice(0, lastSemi + 1) + `(await `
+                    + code.slice(lastSemi + 1, postfixMatch.index) + ')'
+                    + code.slice(postfixMatch.index + postfixMatch[0].length);
+            }
+        }
+
         return new Code({
             code,
             isExpression,
