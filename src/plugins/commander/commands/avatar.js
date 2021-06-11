@@ -1,4 +1,4 @@
-const { MessageAttachment } = require('discord.js');
+const { MessageAttachment, MessageEmbed } = require('discord.js');
 const Command = require('../structs/Command.js');
 
 class AvatarCommand extends Command {
@@ -42,11 +42,22 @@ class AvatarCommand extends Command {
             user = message.author;
         }
 
-        await message.channel.send(`${user.username}'s avatar`, {
-            files: [
-                this.getAvatar(user)
-            ]
-        });
+        const member = message.guild.member(user);
+        const nick = member && member.nickname || user.username;
+
+        try {
+            await message.channel.send(`${nick}'s avatar`, {
+                files: [
+                    this.getAvatar(user)
+                ]
+            });
+        } catch(e) {
+            await message.channel.send(
+                new MessageEmbed()
+                    .setTitle(`${nick}'s avatar`)
+                    .setImage(this.getAvatar(user))
+            );
+        }
     }
 }
 
