@@ -276,17 +276,7 @@ class EvalCommand extends OPCommand {
         // Strip any leading semicolons, this shouldn't break anything
         code = code.trim().replace(/;+$/g, '').trim();
 
-        // TODO: Do the greatest regex trick for these
-        const isAsync = code.includes('await');
-        const isExpression = !code.includes(';') &&
-            !/\b(if|while|for|try|const|let)\b/.test(code);
-
-        if (isAsync) {
-            code = `(async () => {\n` +
-            `    ${isExpression ? 'return ' : ''}${code};\n` +
-            `})()`;
-        }
-
+        // Transform `v.await`s to `(await v)`
         let postfixMatch;
         while ((postfixMatch = code.match(/\.await/)) !== null) {
             // Try to find the start of the expression
@@ -305,6 +295,17 @@ class EvalCommand extends OPCommand {
                     + code.slice(lastSemi + 1, postfixMatch.index) + ')'
                     + code.slice(postfixMatch.index + postfixMatch[0].length);
             }
+        }
+
+        // TODO: Do the greatest regex trick for these
+        const isAsync = code.includes('await');
+        const isExpression = !code.includes(';') &&
+            !/\b(if|while|for|try|const|let)\b/.test(code);
+
+        if (isAsync) {
+            code = `(async () => {\n` +
+            `    ${isExpression ? 'return ' : ''}${code};\n` +
+            `})()`;
         }
 
         return new Code({
