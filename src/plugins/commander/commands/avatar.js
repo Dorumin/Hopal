@@ -19,10 +19,18 @@ class AvatarCommand extends Command {
         return avatarHash.startsWith('a_') ? 'gif' : 'png';
     }
 
-    getAvatar(user) {
+    getAvatarURL(user) {
         const avatarHash = user.avatar;
         const ext = this.getExtension(avatarHash);
         const url = `https://cdn.discordapp.com/avatars/${user.id}/${avatarHash}.${ext}?size=2048`;
+
+        return url;
+    }
+
+    getAvatar(user) {
+        const avatarHash = user.avatar;
+        const ext = this.getExtension(avatarHash);
+        const url = this.getAvatarURL(user);
 
         return new MessageAttachment(url, `avatar.${ext}`);
     }
@@ -55,7 +63,7 @@ class AvatarCommand extends Command {
             await message.channel.send(
                 new MessageEmbed()
                     .setTitle(`${nick}'s avatar`)
-                    .setImage(this.getAvatar(user))
+                    .setImage(this.getAvatarURL(user))
             );
         }
     }
