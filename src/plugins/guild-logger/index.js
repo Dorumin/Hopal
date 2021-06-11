@@ -143,7 +143,7 @@ class GuildLogger {
                             dynamic: true,
                             size: 2048
                         }),
-                        `icon.${newIconAnim ? 'png' : 'gif'}`
+                        `icon.${newIconAnim ? 'gif' : 'png'}`
                     )
                 ]
             });
