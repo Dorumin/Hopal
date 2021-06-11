@@ -1,6 +1,7 @@
 const path = require('path');
 const util = require('util');
 const child_process = require('child_process');
+const got = require('got');
 const { parse, HTMLElement, TextNode } = require('node-html-parser');
 const { BaseManager, MessageAttachment, MessageEmbed } = require('discord.js');
 const Command = require('../structs/Command.js');
@@ -124,15 +125,15 @@ class EvalCommand extends OPCommand {
 
         // Internal require cache for our custom-loader for dynamic npm installs
         this.stupidRequireCache = new Map();
-	}
+    }
 
     // 8mb = 8388269, message limit = 2000
-	inspect(object, depth = 3) {
+    inspect(object, depth = 3) {
         return new Inspection({
             depth,
             source: object
         });
-	}
+    }
 
     require(channel, name) {
         // Accomodate our stupid cache
@@ -243,7 +244,22 @@ class EvalCommand extends OPCommand {
         this.unpatchManagerClasses();
     }
 
-    getCode(content) {
+    async getCode(message, content) {
+        if (message.attachments.size !== 0) {
+            const file = message.attachments.first();
+            const ext = file.name.split('.').pop();
+
+            if (ext === 'js' || ext === 'txt') {
+                const code = await got(file.url).text();
+
+                return new CodeBlock({
+                    code,
+                    isExpression: false,
+                    isAsync: false
+                });
+            }
+        }
+
         let code = content;
 
         // Strip code block
@@ -363,7 +379,8 @@ class EvalCommand extends OPCommand {
         this.beforeEval(context);
 
         const require = this.getCustomRequire(context);
-        swallow(require);
+        const module = context.module;
+        swallow(require, module);
 
         let result;
         try {
@@ -606,10 +623,10 @@ class EvalCommand extends OPCommand {
             return await this.sendExpand(channel, String(result));
         }
 
-		if (typeof result === 'function') {
-			const stringified = result.toString();
-			const lastLine = stringified.slice(stringified.lastIndexOf('\n') + 1);
-			const indent = lastLine.match(/^\s*/)[0];
+        if (typeof result === 'function') {
+            const stringified = result.toString();
+            const lastLine = stringified.slice(stringified.lastIndexOf('\n') + 1);
+            const indent = lastLine.match(/^\s*/)[0];
             let indented = indent + stringified;
 
             if (indented.split('\n').every(line => line.trim() === '' || line.slice(0, indent.length) === indent)) {
@@ -619,7 +636,7 @@ class EvalCommand extends OPCommand {
             }
 
             return await this.sendExpand(channel, indented, 'js');
-		}
+        }
 
         if (result instanceof Error) {
             const inspection = this.inspect(result);
@@ -766,7 +783,7 @@ class EvalCommand extends OPCommand {
     }
 
     async call(message, content) {
-        const code = this.getCode(content);
+        const code = await this.getCode(message, content);
         const context = this.getVars(message);
         const { result } = await this.evaluate(code, context);
 
@@ -778,15 +795,26 @@ class EvalCommand extends OPCommand {
             await this.respond(result, context, code);
         }
 
-        this.afterEval();
-
         const exported = context.module.exports;
 
-        if (Command.isPrototypeOf(exported)) {
-            this.bot.commander.loadCommand(exported, exported.name);
+        try {
+            let proto = exported;
+            while (true) {
+                proto = Object.getPrototypeOf(proto);
 
-            await message.channel.send(`Registered a new command: ${exported.name}`);
-        }
+                if (proto === null) {
+                    break;
+                }
+
+                if (proto === Command) {
+                    this.bot.commander.loadCommand(exported, exported.name);
+
+                    await message.channel.send(`Registered a new command: ${exported.name}`);
+                }
+            }
+        } catch(e) {}
+
+        this.afterEval();
     }
 }
 
