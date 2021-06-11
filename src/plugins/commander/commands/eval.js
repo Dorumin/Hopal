@@ -278,7 +278,7 @@ class EvalCommand extends OPCommand {
 
         // Transform `v.await`s to `(await v)`
         let postfixMatch;
-        while ((postfixMatch = code.match(/\.await/)) !== null) {
+        while ((postfixMatch = code.match(/\.await\b/)) !== null) {
             // Try to find the start of the expression
             // We do this by backtracking to the first semicolon
             // or the start of the string
@@ -287,7 +287,9 @@ class EvalCommand extends OPCommand {
 
             // Warning: some real fuckin ugly index code ahead
             const lastSemi = code.lastIndexOf(';', postfixMatch.index);
-            if (lastSemi == -1) {
+
+            // This branch is completely unnecessary but I like it here
+            if (lastSemi === -1) {
                 code = `(await ` + code.slice(0, postfixMatch.index) + ')'
                     + code.slice(postfixMatch.index + postfixMatch[0].length);
             } else {
