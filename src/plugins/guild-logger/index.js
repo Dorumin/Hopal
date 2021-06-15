@@ -54,6 +54,7 @@ class GuildLogger {
         this.bot.client.on('messageUpdate', this.onMessageUpdate.bind(this));
         this.bot.client.on('messageDelete', this.onMessageDelete.bind(this));
         this.bot.client.on('voiceStateUpdate', this.onVoiceStateUpdate.bind(this));
+        this.bot.client.on('guildMemberUpdate', this.onGuildMemberUpdate.bind(this));
     }
 
     async onEmojiCreate(emoji) {
@@ -385,6 +386,81 @@ class GuildLogger {
                 console.log(voiceChannel);
                 console.log(member);
             }
+        }
+    }
+
+    onGuildMemberUpdate(oldMember, newMember) {
+        const nicknameChanged = oldMember.nickname !== newMember.nickname;
+        const rolesChanged = oldMember.roles.cache.difference(newMember.roles.cache);
+
+        // TODO: Pending attribution on these two with the audit log
+        if (nicknameChanged) {
+            this.onNicknameChange(oldMember, newMember);
+        }
+
+        if (rolesChanged) {
+            this.onRolesUpdate(newMember, rolesChanged);
+        }
+    }
+
+    async onNicknameChange(oldMember, newMember) {
+        if (!this.listeners.NICKNAME_CHANGE) return;
+
+        for (const listener of this.listeners.NICKNAME_CHANGE) {
+            if (listener.guildId !== newMember.guild.id) continue;
+
+            const channel = newMember.guild.channels.cache.get(listener.channelId);
+            if (!channel) continue;
+
+            await channel.send(
+                new MessageEmbed()
+                    .setDescription(`<@${newMember.user.id}> changed its nickname`)
+                    .addField('Old nickname', oldMember.nickname || '*<none>*')
+                    .addField('New nickname', newMember.nickname || '*<none>*')
+                    .setFooter('Nickname change',
+                        newMember.user.avatarURL({
+                            format: 'png',
+                            dynamic: true,
+                            size: 32
+                        })
+                    )
+                    .setTimestamp()
+            );
+        }
+    }
+
+    async onRolesUpdate(member, updatedRoles) {
+        if (!this.listeners.ROLES_UPDATE) return;
+
+        for (const listener of this.listeners.ROLES_UPDATE) {
+            if (listener.guildId !== member.guild.id) continue;
+
+            const channel = member.guild.channels.cache.get(listener.channelId);
+            if (!channel) continue;
+
+            const embed = new MessageEmbed()
+                .setDescription(`<@${member.user.id}>'s roles were updated`)
+                .setFooter('Roles update',
+                    member.user.avatarURL({
+                        format: 'png',
+                        dynamic: true,
+                        size: 32
+                    })
+                )
+                .setTimestamp();
+
+            const added = updatedRoles.filter(role => member.roles.cache.has(role.id));
+            const removed = updatedRoles.filter(role => !member.roles.cache.has(role.id));
+
+            if (added.size !== 0) {
+                embed.addField('Added roles', added.map(role => `<@&${role.id}>`).join('\n'));
+            }
+
+            if (removed.size !== 0) {
+                embed.addField('Removed roles', removed.map(role => `<@&${role.id}>`).join('\n'));
+            }
+
+            await channel.send(embed);
         }
     }
 }
