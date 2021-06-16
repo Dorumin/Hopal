@@ -391,15 +391,15 @@ class GuildLogger {
 
     onGuildMemberUpdate(oldMember, newMember) {
         const nicknameChanged = oldMember.nickname !== newMember.nickname;
-        const rolesChanged = oldMember.roles.cache.difference(newMember.roles.cache);
+        const updatedRoles = oldMember.roles.cache.difference(newMember.roles.cache);
 
         // TODO: Pending attribution on these two with the audit log
         if (nicknameChanged) {
             this.onNicknameChange(oldMember, newMember);
         }
 
-        if (rolesChanged) {
-            this.onRolesUpdate(newMember, rolesChanged);
+        if (updatedRoles.size !== 0) {
+            this.onRolesUpdate(newMember, updatedRoles);
         }
     }
 
