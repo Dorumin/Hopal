@@ -438,8 +438,27 @@ class GuildLogger {
             const channel = member.guild.channels.cache.get(listener.channelId);
             if (!channel) continue;
 
+            let description = `<@${member.user.id}>'s roles were updated`;
+            try {
+                // Try to find out who updated the roles
+                const auditLogs = await message.guild.fetchAuditLogs({
+                    limit: 1
+                });
+                const latest = auditLogs.entries.first();
+                const elapsed = Date.now() - SnowflakeUtil.deconstruct(latest.id).timestamp;
+
+                if (
+                    latest.action === 'MEMBER_ROLE_UPDATE' &&
+                    latest.target.id === member.user.id &&
+                    elapsed < 1000
+                ) {
+                    description = `<@${member.user.id}>'s roles were updated `
+                        + `by <@${latest.executor.id}>`;
+                }
+            } catch(e) {}
+
             const embed = new MessageEmbed()
-                .setDescription(`<@${member.user.id}>'s roles were updated`)
+                .setDescription(description)
                 .setFooter('Roles update',
                     member.user.avatarURL({
                         format: 'png',
