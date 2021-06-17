@@ -441,7 +441,7 @@ class GuildLogger {
             let description = `<@${member.user.id}>'s roles were updated`;
             try {
                 // Try to find out who updated the roles
-                const auditLogs = await message.guild.fetchAuditLogs({
+                const auditLogs = await member.guild.fetchAuditLogs({
                     limit: 1
                 });
                 const latest = auditLogs.entries.first();
