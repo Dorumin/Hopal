@@ -2,7 +2,7 @@ const { MessageEmbed } = require('discord.js');
 const Command = require('../structs/Command.js');
 const FormatterPlugin = require('../../fmt');
 
-const EMOJI_REGEX = /<a?:(\w+):(\d+)>/;
+const EMOJI_REGEX = /<(a?):(\w+):(\d+)>/;
 
 class EmojiCommand extends Command {
     static get deps() {
@@ -38,11 +38,16 @@ class EmojiCommand extends Command {
             return;
         }
 
+        const animated = match[1] === 'a';
+        const name = match[2];
+        const id = match[3];
+        const ext = animated ? 'gif' : 'png';
+
         await message.channel.send(
             new MessageEmbed()
-                .setTitle(`Emoji link: ${match[1]}`)
-                .setURL(`https://cdn.discordapp.com/emojis/${match[2]}.png`)
-                .setImage(`https://cdn.discordapp.com/emojis/${match[2]}.png`)
+                .setTitle(`Emoji link: ${name}`)
+                .setURL(`https://cdn.discordapp.com/emojis/${id}.${ext}`)
+                .setImage(`https://cdn.discordapp.com/emojis/${id}.${ext}`)
         );
     }
 }
