@@ -50,7 +50,7 @@ class AvatarCommand extends Command {
             user = message.author;
         }
 
-        const member = message.guild.member(user);
+        const member = message.guild && message.guild.member(user);
         const nick = member && member.nickname || user.username;
 
         try {
