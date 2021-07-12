@@ -23,18 +23,31 @@ class LyricsCommand extends Command {
     }
 
     async call(message, content) {
-        const mentionedMembers = message.mentions.members;
-        const target = mentionedMembers.size > 0
-            ? mentionedMembers.first()
-            : message.member;
+        let target = message.mentions.members && message.mentions.members.first();
+        let isUser = false;
+
+        if (!target) {
+            const id = content.match(/\d{8,}/);
+
+            if (id) {
+                target = this.bot.client.users.cache.get(id[0]);
+                isUser = true;
+            }
+        }
+
+        if (!target) {
+            target = message.author;
+            isUser = true;
+        }
+
         let search = content.replace(/<@!?\d+>/, '');
 
         if (!search) {
-            const spotify = target.user.presence.activities
-                .find(activity =>
-                    activity.name === 'Spotify' &&
-                    activity.type === 'LISTENING'
-                );
+            const presence = isUser ? target.presence.activities : target.user.presence.activities
+            const spotify = presence.find(activity =>
+                activity.name === 'Spotify' &&
+                activity.type === 'LISTENING'
+            );
 
             if (spotify) {
                 const {
@@ -78,7 +91,7 @@ class LyricsCommand extends Command {
                     }),
                     description: chunked[i].join('\n'),
                     footer: this.only(last, {
-                        text: `Just for you, ${this.nameOf(target)}`,
+                        text: `Just for you, ${this.nameOf(target, isUser)}`,
                         icon_url: target.user.avatarURL({
                             format: 'png',
                             dynamic: true,
@@ -90,7 +103,11 @@ class LyricsCommand extends Command {
         }
     }
 
-    nameOf(member) {
+    nameOf(member, isUser) {
+        if (isUser) {
+            return member.username;
+        }
+        
         return member.nickname || member.user.username;
     }
 
