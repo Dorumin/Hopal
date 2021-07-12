@@ -1,8 +1,8 @@
 const got = require('got');
 const CommandUtils = require('../structs/CommandUtils.js');
-const ModCommand = require('../structs/ModCommand.js');
+const AdminCommand = require('../structs/AdminCommand.js');
 
-class ClearCommand extends ModCommand {
+class ClearCommand extends AdminCommand {
     constructor(bot) {
         super(bot);
         this.aliases = ['clear', 'clean', 'clr', 'purge'];
