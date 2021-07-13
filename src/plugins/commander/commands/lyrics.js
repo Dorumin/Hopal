@@ -92,11 +92,7 @@ class LyricsCommand extends Command {
                     description: chunked[i].join('\n'),
                     footer: this.only(last, {
                         text: `Just for you, ${this.nameOf(target, isUser)}`,
-                        icon_url: target.user.avatarURL({
-                            format: 'png',
-                            dynamic: true,
-                            size: 32
-                        })
+                        icon_url: this.avatarOf(target, isUser)
                     })
                 }
             });
@@ -111,6 +107,16 @@ class LyricsCommand extends Command {
         return member.nickname || member.user.username;
     }
 
+    avatarOf(target, isUser) {
+        const user = isUser ? target : target.user;
+
+        return user.avatarURL({
+            format: 'png',
+            dynamic: true,
+            size: 32
+        });
+    }
+    
     only(cond, value) {
         if (cond) {
             return value;
