@@ -1,21 +1,55 @@
 const { parentPort } = require('worker_threads');
 const got = require('got');
 const { parse } = require('node-html-parser');
+const puppeteer = require('puppeteer');
+const browserPromise = puppeteer.launch({
+    args: ["--no-sandbox"]
+});
+
+function fetchData(meta) {
+    return new Promise(async resolve => {
+        console.log('awaiting browser...');
+        const browser = await browserPromise;
+        console.log('awaiting page...');
+        const page = await browser.newPage();
+        await page.setUserAgent(meta.USER_AGENT);
+
+        page.on('response', async (response) => {
+            const request = response.request();
+
+            try {
+                const buffer = await response.buffer();
+
+                console.log(`Request: ${request.url()}`);
+                console.log(`Response: ${buffer.byteLength}`);
+
+                if (request.url().includes('/ajax/')) {
+                    require('fs').writeFileSync(`./response ${Date.now()}.txt`, `${request.url()}\n${buffer}`);
+                }
+
+                if (request.url().includes('/ajax/list/')) {
+                    const object = JSON.parse(buffer.toString());
+                    if (object.ok === false) {
+                        reject(object);
+                    } else {
+                        resolve(object);
+                    }
+
+                    // await page.close();
+                }
+            } catch(e) {
+                console.log(`Request failed to get response: ${request.url()}`);
+            }
+        });
+
+        await page.goto('https://dstserverlist.appspot.com/');
+    });
+}
 
 async function doFetch(meta) {
-    const ts = Math.floor(Date.now() / 1000);
-
+    console.log('fetch start', meta);
     console.time('fetching');
-    const res = await got(`https://dstserverlist.appspot.com/ajax/list?${ts}`, {
-        searchParams: {
-            [meta.CSRF_KEY]: meta.CSRF_VALUE
-        },
-        headers: {
-            'Cookie': meta.COOKIE,
-            'Referer': 'https://dstserverlist.appspot.com/',
-            'x-requested-with': 'XMLHttpRequest'
-        }
-    }).json();
+    const res = await fetchData(meta);
     console.timeEnd('fetching');
 
     console.time('parsing');
@@ -86,6 +120,7 @@ async function doFetch(meta) {
             playerCount,
             maxPlayers,
             name,
+            lc: name.toLowerCase(),
             mode,
             season,
             modded,

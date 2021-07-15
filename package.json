@@ -30,6 +30,7 @@
     "he": "^1.2.0",
     "node-fetch": "^2.6.1",
     "node-html-parser": "^3.3.3",
+    "puppeteer": "^10.1.0",
     "recursive-readdir": "^2.2.2",
     "tough-cookie": "3.0.1"
   }
