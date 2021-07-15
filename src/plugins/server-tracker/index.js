@@ -1,7 +1,7 @@
 const got = require('got');
 const path = require('path');
-const { parse } = require('node-html-parser');
 const { Worker } = require('worker_threads');
+const { parse } = require('node-html-parser');
 
 const Plugin = require('../../structs/Plugin');
 const FormatterPlugin = require('../fmt');
@@ -98,6 +98,7 @@ class ServerTracker {
     }
 
     async startFetching() {
+        if (this.config.DISABLED) return;
         if (this.dev) return;
 
         while (true) {
@@ -107,7 +108,9 @@ class ServerTracker {
                 await this.updateMeta();
 
                 await this.doFetch();
-            } catch(e) {}
+            } catch(e) {
+                console.error(e);
+            }
 
             await this.wait(this.meta.INTERVAL * 1000);
         }
@@ -141,6 +144,8 @@ class ServerTracker {
             for (const [index, tracker] of this.tracking.entries()) {
                 if (tracker.DISABLED) continue;
 
+                console.log('matching', tracker);
+
                 const matches = tracker.MATCH;
 
                 let found = false;
@@ -161,6 +166,7 @@ class ServerTracker {
                     }
 
                     if (matching && matchingProps) {
+                        console.log('matched!', server);
                         found = true;
                         serverData = server;
                         break;
@@ -208,7 +214,8 @@ class ServerTracker {
             return servers;
         } catch(e) {
             console.error(e);
-            console.error(e.response.body);
+            console.error(e.message);
+            // console.error(e.response.body);
         }
     }
 

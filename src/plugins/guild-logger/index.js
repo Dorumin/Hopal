@@ -160,7 +160,7 @@ class GuildLogger {
             if (listener.guildId !== newMessage.guild.id) continue;
 
             const channel = newMessage.guild.channels.cache.get(listener.channelId);
-            if (!channel) contiue;
+            if (!channel) continue;
 
             let description = `<@${newMessage.author.id}> edited a message in <#${newMessage.channel.id}>`;
 
@@ -411,6 +411,26 @@ class GuildLogger {
 
             const channel = newMember.guild.channels.cache.get(listener.channelId);
             if (!channel) continue;
+
+
+            let description = `<@${newMember.user.id}>'s nickname was changed`;
+            try {
+                // Try to find out who updated the nickname
+                const auditLogs = await newMember.guild.fetchAuditLogs({
+                    limit: 1
+                });
+                const latest = auditLogs.entries.first();
+                const elapsed = Date.now() - SnowflakeUtil.deconstruct(latest.id).timestamp;
+
+                if (
+                    latest.action === 'MEMBER_ROLE_UPDATE' &&
+                    latest.target.id === member.user.id &&
+                    elapsed < 1000
+                ) {
+                    description = `<@${member.user.id}>'s roles were updated `
+                        + `by <@${latest.executor.id}>`;
+                }
+            } catch(e) {}
 
             await channel.send(
                 new MessageEmbed()
