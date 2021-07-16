@@ -5,7 +5,7 @@ const Command = require('../structs/Command.js');
 class InspirationCommand extends Command {
     constructor(bot) {
         super(bot);
-        this.aliases = ['inspiration', 'inspire', 'quote'];
+        this.aliases = ['inspiration', 'inspire', 'quote', 'q'];
 
         this.shortdesc = `Gives you some inspiration`;
         this.desc = `Inspires you by posting an automatically-generated inspirational quote`;
