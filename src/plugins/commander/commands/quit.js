@@ -3,7 +3,7 @@ const OPCommand = require('../structs/OPCommand.js');
 class QuitCommand extends OPCommand {
     constructor(bot) {
         super(bot);
-        this.aliases = ['quit', 'q', 'destroy', 'die'];
+        this.aliases = ['quit', 'destroy', 'die'];
 
         this.shortdesc = `Kills the bot.`;
         this.desc = `
