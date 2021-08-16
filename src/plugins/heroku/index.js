@@ -16,7 +16,9 @@ class Heroku {
 
         this.app.get('/', this.routeIndex);
 
-        this.app.listen(process.env.PORT || this.config.PORT || 3000);
+        this.server = this.app.listen(process.env.PORT || this.config.PORT || 3000);
+
+        this.server.addListener('error', () => {});
 
         this.alwaysOnline();
     }
