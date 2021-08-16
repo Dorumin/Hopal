@@ -1,0 +1,2 @@
+https://dstserverlist.appspot.com/ajax/query
+{"ok":true,"result":1626383072}

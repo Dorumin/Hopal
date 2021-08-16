@@ -20,7 +20,8 @@ class PingCommand extends Command {
 		const line = `:heartbeat: ${this.getPing()}ms`;
 		const reply = await message.channel.send(line);
 		const time = `:stopwatch: ${this.getSnowflakeTime(reply.id) - this.getSnowflakeTime(message.id)}ms`;
-		reply.edit(`${line}\n${time}`);
+
+		await reply.edit(`${line}\n${time}`);
 	}
 
 	getSnowflakeTime(id) {

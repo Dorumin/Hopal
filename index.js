@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+require('events').captureRejections = true;
 const path = require('path');
 const Hopal = require('./src/Hopal.js');
 const client = new Hopal();
@@ -10,3 +11,6 @@ if (client.commander) {
 }
 
 client.login(client.config.TOKEN);
+
+process.on('unhandledRejection', client.unhandledRejection.bind(client));
+process.on('SIGINT', client.cleanup.bind(client));

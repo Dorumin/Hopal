@@ -18,11 +18,7 @@ class Command {
     }
 
     isAdmin(message) {
-        return message.guild && message.member.hasPermission('ADMINISTRATOR');
-    }
-
-    wait(ms, val) {
-        return new Promise(res => setTimeout(res.bind(this, val), ms));
+        return message.guild && message.member.permissions.has('ADMINISTRATOR');
     }
 
     filter() {
@@ -32,6 +28,8 @@ class Command {
     call() {
         throw new Error('call() not implemented');
     }
+
+    cleanup() {}
 }
 
 module.exports = Command;

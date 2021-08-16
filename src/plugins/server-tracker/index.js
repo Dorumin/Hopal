@@ -99,7 +99,7 @@ class ServerTracker {
 
     async startFetching() {
         if (this.config.DISABLED) return;
-        if (this.dev) return;
+        // if (this.dev) return;
 
         while (true) {
             // await this.wait(this.meta.INTERVAL * 1000);

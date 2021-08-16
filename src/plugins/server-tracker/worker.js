@@ -6,10 +6,22 @@ const browserPromise = puppeteer.launch({
     args: ["--no-sandbox"]
 });
 
+browserPromise.catch(() => {});
+
 function fetchData(meta) {
     return new Promise(async resolve => {
         console.log('awaiting browser...');
-        const browser = await browserPromise;
+        let browser;
+        try {
+            browser = await browserPromise;
+        } catch(e) {
+            console.info('Browser failed to launch');
+
+            resolve([]);
+
+            return;
+        }
+
         console.log('awaiting page...');
         const page = await browser.newPage();
         await page.setUserAgent(meta.USER_AGENT);

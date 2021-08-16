@@ -35,15 +35,13 @@ class YouTubeCommand extends Command {
 
         const results = await this.bot.youtube.search(content);
 
-        console.log(results);
-
         if (results.length === 0) {
             await message.channel.send('Sorry, no results!');
             return;
         }
 
         if (alias === 'yts') {
-            this.postResults(message, results);
+            await this.postResults(message, results);
         } else {
             await message.channel.send(`https://youtu.be/${results[0].id.videoId}`);
         }
@@ -75,7 +73,7 @@ class YouTubeCommand extends Command {
                     results,
                     index,
                     manager
-                })
+                }).catch(() => {})
             );
         }
 
@@ -94,7 +92,9 @@ class YouTubeCommand extends Command {
     }
 
     async onResultChoose({ message, results, index, manager }) {
-        manager.clear();
+        // Discard all reactions, likely to fail because message is attempted
+        // to be deleted next
+        manager.clear().catch(() => {});
 
         const result = results[index];
 
