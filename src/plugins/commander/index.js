@@ -216,9 +216,9 @@ class Commander {
         return this.callCommand(command, message, content);
     }
 
-    async callCommand(command, message, content) {
+    async callCommand(command, message, content, extra) {
         try {
-            await command.call(message, content.trim());
+            await command.call(message, content.trim(), extra);
         } catch(e) {
             const lines = e.stack.split('\n');
             const firstRelevant = lines.findIndex(line => line.includes('Commander.callCommand'));
