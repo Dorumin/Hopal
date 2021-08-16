@@ -136,10 +136,10 @@ class Commander {
     }
 
     async tryMatchCommands(message) {
-        let text = message.content.trim(),
-        prefixes = await this.getPrefixes(message.guild),
-        i = prefixes.length,
-        matched = false;
+        const text = message.content.trim();
+        const prefixes = await this.getPrefixes(message.guild);
+        let i = prefixes.length;
+        let matched = false;
 
         while (i--) {
             const prefix = prefixes[i];
@@ -164,7 +164,12 @@ class Commander {
                     if (!command.bot && message.author.bot) continue;
 
                     matched = true;
-                    this.callCommand(command, message, trimmed.slice(alias.length + 1).trimLeft());
+
+                    const content = trimmed.slice(alias.length + 1).trimLeft();
+
+                    this.callCommand(command, message, content, {
+                        alias
+                    });
                 }
 
                 if (matched) break;
@@ -177,9 +182,9 @@ class Commander {
     }
 
     async getPrefixes(guild) {
-        const prefixes = guild && this.bot.db
-            ? await this.bot.db.get(`commander.prefixes.${guild.id}`, this.prefixes)
-            : this.prefixes;
+        const prefixes = guild && this.prefixes.hasOwnProperty(guild.id)
+            ? this.prefixes[guild.id]
+            : this.prefixes.DEFAULT;
 
         if (this.config.MENTION) {
             const id = this.bot.client.user.id;
