@@ -333,7 +333,7 @@ class ServerTracker {
                 };
 
                 await state.message.edit({
-                    embed: this.buildEventEmbed('UP', server)
+                    embeds: [this.buildEventEmbed('UP', server)]
                 });
             }
 
@@ -344,7 +344,7 @@ class ServerTracker {
 
         if (channel) {
             const message = await channel.send({
-                embed: this.buildEventEmbed(event, server)
+                embeds: [this.buildEventEmbed(event, server)]
             });
 
             const state = this.trackerState[index];

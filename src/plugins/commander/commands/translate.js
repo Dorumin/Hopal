@@ -88,11 +88,11 @@ class TranslateCommand extends Command {
         });
 
         await message.channel.send({
-            embed: {
+            embeds: [{
                 title: 'Google Translate',
                 url: `https://translate.google.com/?sl=${from}&tl=${to}&text=${encodeURIComponent(text)}&op=translate`,
                 description: translation
-            }
+            }]
         });
     }
 

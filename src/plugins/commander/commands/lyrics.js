@@ -82,7 +82,7 @@ class LyricsCommand extends Command {
             const last = i === chunked.length - 1;
 
             await message.channel.send({
-                embed: {
+                embeds: [{
                     url: data.url,
                     title: this.only(first,
                         `Song lyrics for ${title} by ${artist}!`),
@@ -94,7 +94,7 @@ class LyricsCommand extends Command {
                         text: `Just for you, ${this.nameOf(target, isUser)}`,
                         icon_url: this.avatarOf(target, isUser)
                     })
-                }
+                }]
             });
         }
     }
@@ -103,7 +103,7 @@ class LyricsCommand extends Command {
         if (isUser) {
             return member.username;
         }
-        
+
         return member.nickname || member.user.username;
     }
 
@@ -116,7 +116,7 @@ class LyricsCommand extends Command {
             size: 32
         });
     }
-    
+
     only(cond, value) {
         if (cond) {
             return value;

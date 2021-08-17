@@ -1,5 +1,6 @@
 const Command = require('../structs/Command.js');
 const FormatterPlugin = require('../../fmt');
+const { MessageEmbed } = require('discord.js');
 
 class ReverseImageSearchCommand extends Command {
     static get deps() {
@@ -70,21 +71,23 @@ class ReverseImageSearchCommand extends Command {
 
         try {
             await message.channel.send({
-                embed: {
-                    title: 'Yandex',
-                    url: yandex,
-                    image: showImage ? { url } : undefined,
-                    description: this.formatLinks({
-                        Google: google,
-                        TinEye: tineye,
-                        IQDB: iqdb,
-                        SauceNao: saucenao,
-                        TraceMoe: traceMoe
-                    })
-                }
+                embeds: [
+                    new MessageEmbed()
+                        .setTitle('Yandex')
+                        .setURL(yandex)
+                        .setImage(showImage ? url : undefined)
+                        .setDescription(this.formatLinks({
+                            Google: google,
+                            TinEye: tineye,
+                            IQDB: iqdb,
+                            SauceNao: saucenao,
+                            TraceMoe: traceMoe
+                        }))
+                ]
             });
         } catch(e) {
-            message.channel.send('Something went wrong generating the embed.');
+            console.error(e);
+            await message.channel.send('Something went wrong generating the embed.');
         }
     }
 

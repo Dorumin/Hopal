@@ -73,7 +73,7 @@ class YouTubeCommand extends Command {
                     results,
                     index,
                     manager
-                }).catch(() => {})
+                })
             );
         }
 
@@ -98,10 +98,12 @@ class YouTubeCommand extends Command {
 
         const result = results[index];
 
-        await Promise.all([
-            message.delete(),
-            message.channel.send(`https://youtu.be/${result.id.videoId}`)
-        ]);
+        try {
+            await Promise.all([
+                message.delete(),
+                message.channel.send(`https://youtu.be/${result.id.videoId}`)
+            ]);
+        } catch(e) {}
     }
 }
 
