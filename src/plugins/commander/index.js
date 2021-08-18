@@ -8,9 +8,9 @@ const Cache = require('../../structs/Cache.js');
 const LoggerPlugin = require('../logger');
 const FormatterPlugin = require('../fmt');
 
+// Copy the useful ones from https://discord.js.org/#/docs/main/stable/class/CommandInteraction if you need
 const INTERACTION_REFLECT_KEYS = [
     "applicationId",
-    "channel",
     "channelId",
     "client",
     "createdAt",
@@ -35,9 +35,36 @@ class InteractionCompatibilityLayer {
     constructor(interaction) {
         this.inner = interaction;
 
+        this._replied = false;
+
         for (const key of INTERACTION_REFLECT_KEYS) {
             this[key] = this.inner[key];
         }
+    }
+
+    reply(...args) {
+        this._replied = true;
+
+        return this.inner.reply(...args);
+    }
+
+    get channel() {
+        return new Proxy(this.inner.channel, {
+            get: (target, key) => {
+                if (key === 'send') {
+                    return (...args) => {
+                        if (this._replied) {
+                            return this.inner.channel.send(...args);
+                        } else {
+                            this._replied = true;
+                            return this.inner.reply(...args);
+                        }
+                    };
+                }
+
+                return Reflect.get(target, key);
+            }
+        });
     }
 
     get author() {
@@ -49,6 +76,14 @@ class InteractionCompatibilityLayer {
             members: new Collection(),
             users: new Collection()
         };
+    }
+
+    get attachments() {
+        return new Collection();
+    }
+
+    get reactions() {
+        return new Collection();
     }
 }
 
@@ -88,7 +123,6 @@ class Commander {
 
     async onInteraction(interaction) {
         if (!interaction.isCommand()) return;
-        console.log(interaction.options.data);
 
         const command = this.getAlias(interaction.commandName);
 
