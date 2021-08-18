@@ -74,18 +74,20 @@ class AutoHentai {
                     };
 
                     message = {
-                        embed
+                        embeds: [
+                            embed
+                        ]
                     };
                 }
 
                 const channel = this.bot.client.channels.cache.get(id);
 
                 if (channel) {
-                    channel.send(message);
+                    await channel.send(message);
                 }
 
                 if (post.isVideo) {
-                    channel.send(post.url);
+                    await channel.send(post.url);
                 }
             }
         }
