@@ -42,6 +42,10 @@ class WorkerManager {
         }
     }
 
+    terminate() {
+        this.worker.terminate();
+    }
+
     postMessage(data) {
         this.worker.postMessage(data);
         this.messages.push(data);
@@ -67,6 +71,10 @@ class ServerTrackerPlugin extends Plugin {
 
     load() {
         this.bot.tracker = new ServerTracker(this.bot);
+    }
+
+    cleanup() {
+        this.bot.tracker.worker.terminate();
     }
 }
 

@@ -25,6 +25,8 @@ class Hopal {
                 Intents.FLAGS.DIRECT_MESSAGES,
                 // Reactions on commands like !help
                 Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
+                // For reading command actor presences as a source of input
+                Intents.FLAGS.GUILD_PRESENCES,
                 // Extra optional intents
                 config.HOPAL.INTENTS || []
             ],
@@ -128,6 +130,8 @@ class Hopal {
     }
 
     async cleanup() {
+        console.log('called cleanup');
+
         for (const plugin of this.loadedPlugins) {
             await plugin.cleanup();
         }

@@ -1,7 +1,9 @@
 const got = require('got');
 const cheerio = require('cheerio');
+const { SlashCommandBuilder } = require('@discordjs/builders');
 const Command = require('../structs/Command.js');
 const FormatterPlugin = require('../../fmt');
+const { MessageEmbed } = require('discord.js');
 
 class LyricsCommand extends Command {
     static get deps() {
@@ -13,6 +15,15 @@ class LyricsCommand extends Command {
     constructor(bot) {
         super(bot);
         this.aliases = ['lyrics', 'l'];
+        this.schema = new SlashCommandBuilder()
+            // .setName('lyrics')
+            // .setDescription(`Sends an embed for the lyrics of a song`)
+            .addStringOption(option =>
+                option.setName('title')
+                    .setDescription('The song title to look up')
+            );
+
+        this.schema.name
 
         this.shortdesc = `Sends you the lyrics of a song`;
         this.desc = `Sends an embed for the lyrics of a song`;
@@ -23,27 +34,45 @@ class LyricsCommand extends Command {
     }
 
     async call(message, content) {
-        let target = message.mentions.members && message.mentions.members.first();
+        let target = message.mentions.members.first();
         let isUser = false;
 
         if (!target) {
             const id = content.match(/\d{8,}/);
 
             if (id) {
-                target = this.bot.client.users.cache.get(id[0]);
-                isUser = true;
+                target = message.guild.members.cache.get(id[0]);
             }
         }
 
         if (!target) {
-            target = message.author;
-            isUser = true;
+            target = message.member;
         }
+
+        if (!target) {
+            // Only way to get to this point is in DMs
+            // Discord.js v13 removed presence from User objects, so you can
+            // only get it from GuildMember instances
+            // This tries to get it by checking all cached members
+            for (const guild of client.guilds.cache.values()) {
+                if (guild.members.cache.has(message.author.id)) {
+                    target = guild.members.cache.get(message.author.id);
+                    break;
+                }
+            }
+        }
+
+        console.log(target);
 
         let search = content.replace(/<@!?\d+>/, '');
 
         if (!search) {
-            const presence = isUser ? target.presence.activities : target.user.presence.activities
+            if (!target) {
+                message.channel.send('Supply a search query.');
+                return;
+            }
+
+            const presence = target.presence.activities;
             const spotify = presence.find(activity =>
                 activity.name === 'Spotify' &&
                 activity.type === 'LISTENING'
@@ -81,20 +110,32 @@ class LyricsCommand extends Command {
             const first = i === 0;
             const last = i === chunked.length - 1;
 
+            const embed = new MessageEmbed()
+                .setURL(data.url)
+                .setDescription(chunked[i].join('\n'));
+
+            if (first) {
+                embed.setTitle(`Song lyrics for ${title} by ${artist}!`);
+                embed.setThumbnail(data.thumb);
+            }
+
+            if (last) {
+                const name = target
+                    ? target.nickname || target.user.username
+                    : message.author.username;
+                const avatar = (target ? target.user : message.author).avatarURL({
+                    format: 'png',
+                    dynamic: true,
+                    size: 32
+                });
+
+                embed.setFooter(`Just for you, ${name}`, avatar);
+            }
+
             await message.channel.send({
-                embeds: [{
-                    url: data.url,
-                    title: this.only(first,
-                        `Song lyrics for ${title} by ${artist}!`),
-                    thumbnail: this.only(first, {
-                        url: data.thumb
-                    }),
-                    description: chunked[i].join('\n'),
-                    footer: this.only(last, {
-                        text: `Just for you, ${this.nameOf(target, isUser)}`,
-                        icon_url: this.avatarOf(target, isUser)
-                    })
-                }]
+                embeds: [
+                    embed
+                ]
             });
         }
     }

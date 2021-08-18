@@ -1,10 +1,56 @@
 const fs = require('fs');
 const path = require('path');
+const { REST } = require('@discordjs/rest');
+const { Routes } = require('discord-api-types/v9');
 const Plugin = require('../../structs/Plugin.js');
 const Collection = require('../../structs/Collection.js');
 const Cache = require('../../structs/Cache.js');
 const LoggerPlugin = require('../logger');
 const FormatterPlugin = require('../fmt');
+
+const INTERACTION_REFLECT_KEYS = [
+    "applicationId",
+    "channel",
+    "channelId",
+    "client",
+    "createdAt",
+    "createdTimestamp",
+    "guild",
+    "guildId",
+    "id",
+    "member",
+    "token",
+    "type",
+    "user",
+    "version",
+    "inGuild",
+    "isButton",
+    "isCommand",
+    "isContextMenu",
+    "isMessageComponent",
+    "isSelectMenu"
+];
+
+class InteractionCompatibilityLayer {
+    constructor(interaction) {
+        this.inner = interaction;
+
+        for (const key of INTERACTION_REFLECT_KEYS) {
+            this[key] = this.inner[key];
+        }
+    }
+
+    get author() {
+        return this.inner.user;
+    }
+
+    get mentions() {
+        return {
+            members: new Collection(),
+            users: new Collection()
+        };
+    }
+}
 
 class CommanderPlugin extends Plugin {
     static get deps() {
@@ -35,9 +81,54 @@ class Commander {
 
         this.log = this.bot.logger.log.bind(this.bot.logger, 'commander');
 
+        bot.client.on('ready', bot.wrapListener(this.registerSlashCommands, this));
         bot.client.on('messageCreate', bot.wrapListener(this.onMessage, this));
+        bot.client.on('interactionCreate', bot.wrapListener(this.onInteraction, this));
     }
 
+    async onInteraction(interaction) {
+        if (!interaction.isCommand()) return;
+        console.log(interaction.options.data);
+
+        const command = this.getAlias(interaction.commandName);
+
+        let content = '';
+
+        for (const option of interaction.options.data) {
+            content += option.value + ' ';
+        }
+
+        const compat = new InteractionCompatibilityLayer(interaction);
+
+        this.callCommand(command, compat, content.trim(), {
+            alias: interaction.commandName,
+            interaction: interaction
+        });
+    }
+
+    async registerSlashCommands() {
+        var commands = this.commands.array().filter(command => command.schema);
+        if (commands.length === 0) return;
+
+        commands.forEach(command => {
+            if (command.schema.name === undefined) {
+                command.schema.setName(command.aliases[0]);
+            }
+
+            if (command.schema.description === undefined) {
+                command.schema.setDescription(command.shortdesc);
+            }
+        });
+
+        const rest = new REST({ version: '9' }).setToken(this.bot.client.token);
+
+        await rest.put(
+            Routes.applicationCommands(this.bot.client.application.id),
+            {
+                body: commands.map(c => c.schema.toJSON())
+            }
+        );
+    }
 
     loadCommand(Command, name) {
         let log = `Loading command ${Command.name} ${name}.js`;

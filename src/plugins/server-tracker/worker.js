@@ -36,7 +36,7 @@ function fetchData(meta) {
                 console.log(`Response: ${buffer.byteLength}`);
 
                 if (request.url().includes('/ajax/')) {
-                    require('fs').writeFileSync(`./response ${Date.now()}.txt`, `${request.url()}\n${buffer}`);
+                    // require('fs').writeFileSync(`./response ${Date.now()}.txt`, `${request.url()}\n${buffer}`);
                 }
 
                 if (request.url().includes('/ajax/list/')) {
