@@ -212,7 +212,7 @@ class LyricsCommand extends Command {
     }
 
     chunkLyrics(lyrics) {
-        return this.chunkTextBlocks(lyrics.split('\n'), 1, 2048);
+        return this.chunkTextBlocks(lyrics.split('\n'), 1, 4096);
     }
 
     // Function used to join blocks of text
