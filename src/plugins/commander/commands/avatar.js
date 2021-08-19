@@ -1,10 +1,16 @@
 const { MessageAttachment, MessageEmbed } = require('discord.js');
+const { SlashCommandBuilder } = require('@discordjs/builders');
 const Command = require('../structs/Command.js');
 
 class AvatarCommand extends Command {
     constructor(bot) {
         super(bot);
         this.aliases = ['avatar', 'avi', 'a'];
+        this.schema = new SlashCommandBuilder()
+            .addUserOption(option =>
+                option.setName('user')
+                    .setDescription('The user you want to get the avatar of')
+            );
 
         this.shortdesc = `Gives you an avatar`;
         this.desc = `Uploads a copy of your, or someone else's, avatar`;
@@ -50,11 +56,12 @@ class AvatarCommand extends Command {
             user = message.author;
         }
 
-        const member = message.guild && message.guild.member(user);
+        const member = message.guild && message.guild.members.cache.get(user.id);
         const nick = member && member.nickname || user.username;
 
         try {
-            await message.channel.send(`${nick}'s avatar`, {
+            await message.channel.send({
+                content: `${nick}'s avatar`,
                 files: [
                     this.getAvatar(user)
                 ]

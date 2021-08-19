@@ -125,14 +125,16 @@ class Commander {
         if (!interaction.isCommand()) return;
 
         const command = this.getAlias(interaction.commandName);
+        const compat = new InteractionCompatibilityLayer(interaction);
+
+        // Rights check or whatever for commands
+        if (!command.filter(compat)) return;
 
         let content = '';
 
         for (const option of interaction.options.data) {
             content += option.value + ' ';
         }
-
-        const compat = new InteractionCompatibilityLayer(interaction);
 
         this.callCommand(command, compat, content.trim(), {
             alias: interaction.commandName,
