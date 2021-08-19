@@ -91,16 +91,23 @@ description = Ignore this update! Changes were rollbacked, wait for further news
         ];
     }
 
-    call(message, content) {
+    async call(message, content, { interaction }) {
         const [ mode ] = content.split(/\s/, 1);
 
         switch (mode) {
             case 'new':
-                return this.handleNewEmbed(message, content.slice(mode.length).trim());
+                await this.handleNewEmbed(message, content.slice(mode.length).trim());
             case 'update':
-                return this.handleUpdateEmbed(message, content.slice(mode.length).trim());
+                await this.handleUpdateEmbed(message, content.slice(mode.length).trim());
+
+                if (interaction && !message._replied) {
+                    await interaction.reply({
+                        content: 'Embed updated',
+                        ephemeral: true
+                    });
+                }
             default:
-                return message.channel.send('No mode detected! Make sure to prefix your message with `new` or `update`. Use >help embed for more info.');
+                await message.channel.send('No mode detected! Make sure to prefix your message with `new` or `update`. Use >help embed for more info.');
         }
     }
 
@@ -172,7 +179,7 @@ description = Ignore this update! Changes were rollbacked, wait for further news
 
         const embed = this.buildEmbed(args, this.getDefaults(message));
 
-        return message.edit({ embeds: [embed] });
+        await message.edit({ embeds: [embed] });
     }
 
     parseArgs(string) {
