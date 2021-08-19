@@ -97,6 +97,7 @@ description = Ignore this update! Changes were rollbacked, wait for further news
         switch (mode) {
             case 'new':
                 await this.handleNewEmbed(message, content.slice(mode.length).trim());
+                break;
             case 'update':
                 await this.handleUpdateEmbed(message, content.slice(mode.length).trim());
 
@@ -106,6 +107,7 @@ description = Ignore this update! Changes were rollbacked, wait for further news
                         ephemeral: true
                     });
                 }
+                break;
             default:
                 await message.channel.send('No mode detected! Make sure to prefix your message with `new` or `update`. Use >help embed for more info.');
         }
