@@ -67,11 +67,13 @@ class AvatarCommand extends Command {
                 ]
             });
         } catch(e) {
-            await message.channel.send(
-                new MessageEmbed()
-                    .setTitle(`${nick}'s avatar`)
-                    .setImage(this.getAvatarURL(user))
-            );
+            await message.channel.send({
+                embeds: [
+                    new MessageEmbed()
+                        .setTitle(`${nick}'s avatar`)
+                        .setImage(this.getAvatarURL(user))
+                ]
+            });
         }
     }
 }

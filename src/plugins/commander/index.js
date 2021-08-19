@@ -33,15 +33,41 @@ const INTERACTION_REFLECT_KEYS = [
 ];
 
 class InteractionCompatibilityLayer {
+    static stringifyOption(option) {
+        if (option.value == null) {
+            return '';
+        }
+
+        switch (option.type) {
+            case 'USER':
+                return `<@${option.value}>`;
+            case 'CHANNEL':
+                return `<#${option.value}>`;
+            case 'ROLE':
+                return `<@&${option.value}>`;
+            case 'MENTIONABLE':
+                if (option.user || option.member) {
+                    return `<@${option.value}>`;
+                } else if (option.channel) {
+                    return `<#${option.value}>`;
+                } else if (option.role) {
+                    return `<@&${option.value}>`;
+                }
+            default:
+                return option.value.toString();
+        }
+    }
+
     constructor(interaction) {
         this.inner = interaction;
 
         this._replied = false;
+        this._succeeded = true;
 
         let content = '';
 
         for (const option of interaction.options.data) {
-            content += option.value + ' ';
+            content += InteractionCompatibilityLayer.stringifyOption(option) + ' ';
         }
 
         this._unprefixedContent = content.trim();
@@ -52,10 +78,31 @@ class InteractionCompatibilityLayer {
         }
     }
 
-    reply(...args) {
+    async reply(...args) {
+        if (this._replied) {
+            return await this.inner.channel.send(...args);
+        }
+
         this._replied = true;
 
-        return this.inner.reply(...args);
+        let returned;
+        try {
+            returned = await this.inner.reply(...args);
+        } catch(e) {
+            if (!this._succeeded) {
+                this._replied = false;
+            }
+
+            throw e;
+        }
+
+        this._succeeded = true;
+
+        if (returned === undefined) {
+            return await this.inner.fetchReply();
+        }
+
+        return returned;
     }
 
     get channel() {
@@ -63,12 +110,7 @@ class InteractionCompatibilityLayer {
             get: (target, key) => {
                 if (key === 'send') {
                     return (...args) => {
-                        if (this._replied) {
-                            return this.inner.channel.send(...args);
-                        } else {
-                            this._replied = true;
-                            return this.inner.reply(...args);
-                        }
+                        return this.reply(...args);
                     };
                 }
 
@@ -93,7 +135,12 @@ class InteractionCompatibilityLayer {
             }
         }
 
-        return new MessageMentions(this, users, null, false, false);
+        const mentions = new MessageMentions(this, null, null, false, false);
+
+        // Passing `users` to the mentions constructor seems to clear things
+        mentions.users = users;
+
+        return mentions;
     }
 
     get attachments() {
@@ -170,12 +217,17 @@ class Commander {
 
         const rest = new REST({ version: '9' }).setToken(this.bot.client.token);
 
-        await rest.put(
-            Routes.applicationCommands(this.bot.client.application.id),
-            {
-                body: commands.map(c => c.schema.toJSON())
-            }
-        );
+        try {
+            await rest.put(
+                Routes.applicationCommands(this.bot.client.application.id),
+                {
+                    body: commands.map(c => c.schema.toJSON())
+                }
+            );
+        } catch(e) {
+            console.error('Failed while registering slash commands');
+            console.error(e);
+        }
     }
 
     loadCommand(Command, name) {

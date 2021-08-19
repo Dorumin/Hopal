@@ -14,8 +14,9 @@ class ClearCommand extends AdminCommand {
             .addIntegerOption(option =>
                 option.setName('count')
                     .setDescription('The number of messages to clear')
+                    .setRequired(true)
             )
-            .addIntegerOption(option =>
+            .addUserOption(option =>
                 option.setName('target')
                     .setDescription('The user to delete from')
             );
