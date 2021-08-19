@@ -1,3 +1,4 @@
+const { SlashCommandBuilder } = require('@discordjs/builders');
 const Command = require('../structs/Command.js');
 const FormatterPlugin = require('../../fmt');
 const {promisify} = require('util');
@@ -13,6 +14,32 @@ class EmbedCommand extends Command {
     constructor(bot) {
         super(bot);
         this.aliases = ['embed'];
+        this.schema = new SlashCommandBuilder()
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('new')
+                    .setDescription('Info about a user')
+                    .addStringOption(option =>
+                        option.setName('args')
+                            .setDescription('The embed arguments')
+                            .setRequired(true)
+                    )
+            )
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('update')
+                    .setDescription('Updates an existing embed message')
+                    .addStringOption(option =>
+                        option.setName('url')
+                            .setDescription('The message link')
+                            .setRequired(true)
+                    )
+                    .addStringOption(option =>
+                        option.setName('args')
+                            .setDescription('The embed arguments')
+                            .setRequired(true)
+                    )
+            );
 
         this.QUOTE_PATTERN = /<?https?:\/\/(?:(?:canary|ptb)\.)?discord(?:app)?\.com\/channels\/(@me|\d+)\/(\d+)\/(\d+)>?/;
 

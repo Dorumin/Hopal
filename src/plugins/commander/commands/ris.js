@@ -100,8 +100,8 @@ class ReverseImageSearchCommand extends Command {
 
     isValidLink(link) {
         if (
-            link.slice(0, 7) !== 'http://' &&
-            link.slice(0, 8) !== 'https://'
+            !link.startsWith('http://') &&
+            !link.startsWith('https://')
         ) {
             return false;
         }

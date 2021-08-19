@@ -20,11 +20,13 @@ const INTERACTION_REFLECT_KEYS = [
 
 class InteractionCompatibilityLayer {
     static stringifyOption(option) {
-        if (option.value == null) {
+        if (option.value == null && !option.options) {
             return '';
         }
 
         switch (option.type) {
+            case 'SUB_COMMAND':
+                return option.name + ' ' + InteractionCompatibilityLayer.stringifyOptions(option.options);
             case 'USER':
                 return `<@${option.value}>`;
             case 'CHANNEL':
@@ -44,20 +46,26 @@ class InteractionCompatibilityLayer {
         }
     }
 
+    static stringifyOptions(options) {
+        let content = '';
+
+        for (const option of options) {
+            content += InteractionCompatibilityLayer.stringifyOption(option) + ' ';
+        }
+
+        return content;
+    }
+
     constructor(interaction) {
         this.inner = interaction;
 
         this._replied = false;
         this._succeeded = true;
 
-        let content = '';
+        const content = InteractionCompatibilityLayer.stringifyOptions(interaction.options.data);
 
-        for (const option of interaction.options.data) {
-            content += InteractionCompatibilityLayer.stringifyOption(option) + ' ';
-        }
-
-        this._unprefixedContent = content.trim();
-        this.content = '/' + this.inner.commandName + ' ' + content.trim();
+        this._unprefixedContent = content;
+        this.content = '/' + this.inner.commandName + ' ' + content;
 
         for (const key of INTERACTION_REFLECT_KEYS) {
             this[key] = this.inner[key];
@@ -123,7 +131,8 @@ class InteractionCompatibilityLayer {
 
         const mentions = new MessageMentions(this, null, null, false, false);
 
-        // Passing `users` to the mentions constructor seems to clear things
+        // Passing `users` to the mentions constructor seems to do weird stuff
+        // You end up with invalid structures with all null fields
         mentions.users = users;
 
         return mentions;
