@@ -21,8 +21,6 @@ class LyricsCommand extends Command {
                     .setDescription('The song title to look up')
             );
 
-        this.schema.name
-
         this.shortdesc = `Sends you the lyrics of a song`;
         this.desc = `Sends an embed for the lyrics of a song`;
         this.usages = [
@@ -59,8 +57,6 @@ class LyricsCommand extends Command {
                 }
             }
         }
-
-        console.log(target);
 
         let search = content.replace(/<@!?\d+>/, '');
 
@@ -232,19 +228,43 @@ class LyricsCommand extends Command {
 
         const lowerQuery = query.toLowerCase();
 
-        const songs = json.response.sections[0].hits.sort((a, b) => {
-            const same1 = a.result.title.toLowerCase() == lowerQuery;
-            const same2 = b.result.title.toLowerCase() == lowerQuery;
+        const songs = json.response.sections[0].hits.sort(({ result: a }, { result: b }) => {
+            const same1 = a.title.toLowerCase() == lowerQuery;
+            const same2 = b.title.toLowerCase() == lowerQuery;
 
-            if (same1 === same2) {
+            if (same1 && same2) {
                 // Both match, return most viewed
-                return b.result.stats.pageviews - a.result.stats.pageviews;
+                return b.stats.pageviews - a.stats.pageviews;
             }
 
             if (same1) return -1;
             if (same2) return 1;
 
-            return 0;
+            const startsArtist1 = lowerQuery.startsWith(a.primary_artist.name.toLowerCase());
+            const startsArtist2 = lowerQuery.startsWith(b.primary_artist.name.toLowerCase());
+            const endsArtist1 = lowerQuery.endsWith(a.primary_artist.name.toLowerCase());
+            const endsArtist2 = lowerQuery.endsWith(b.primary_artist.name.toLowerCase());
+
+            const matches1 = startsArtist1
+                ? lowerQuery.slice(a.primary_artist.name.length).trim() === a.title.toLowerCase()
+                : endsArtist1
+                    ? lowerQuery.slice(0, -a.primary_artist.name.length).trim() === a.title.toLowerCase()
+                    : false;
+            const matches2 = startsArtist2
+                ? lowerQuery.slice(b.primary_artist.name.length).trim() === b.title.toLowerCase()
+                : endsArtist2
+                    ? lowerQuery.slice(0, -b.primary_artist.name.length).trim() === b.title.toLowerCase()
+                    : false;
+
+            if (matches1 === matches2) {
+                // Both match, return most viewed
+                return b.stats.pageviews - a.stats.pageviews;
+            }
+
+            if (matches1) return -1;
+            if (matches2) return 1;
+
+            return b.stats.pageviews - a.stats.pageviews;
         });
 
         return songs;

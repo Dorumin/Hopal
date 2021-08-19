@@ -137,6 +137,8 @@ class Hopal {
         }
 
         this.client.destroy();
+
+        process.exit();
     }
 }
 
