@@ -1,4 +1,5 @@
 const got = require('got');
+const { SlashCommandBuilder } = require('@discordjs/builders');
 const Command = require('../structs/Command.js');
 const { Util } = require('discord.js');
 
@@ -6,6 +7,12 @@ class TranslateCommand extends Command {
     constructor(bot) {
         super(bot);
         this.aliases = ['translate', 't'];
+        this.schema = new SlashCommandBuilder()
+            .addStringOption(option =>
+                option.setName('text')
+                    .setDescription('The text you want to translate')
+                    .setRequired(true)
+            );
 
         this.shortdesc = `Translates some text.`;
         this.desc = `

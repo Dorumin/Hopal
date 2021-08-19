@@ -1,3 +1,4 @@
+const { SlashCommandBuilder } = require('@discordjs/builders');
 const Command = require('../structs/Command.js');
 const YouTubePlugin = require('../../youtube');
 const CommandUtilsPlugin = require('../../command-utils/index.js');
@@ -14,7 +15,13 @@ class YouTubeCommand extends Command {
 
     constructor(bot) {
         super(bot);
-        this.aliases = ['yt', 'yts'];
+        this.aliases = ['youtube', 'yt', 'yts'];
+        this.schema = new SlashCommandBuilder()
+            .addStringOption(option =>
+                option.setName('query')
+                    .setDescription('The search query')
+                    .setRequired(true)
+            );
 
         this.shortdesc = `Searches youtube`;
         this.desc = `

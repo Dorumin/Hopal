@@ -16,8 +16,6 @@ class LyricsCommand extends Command {
         super(bot);
         this.aliases = ['lyrics', 'l'];
         this.schema = new SlashCommandBuilder()
-            // .setName('lyrics')
-            // .setDescription(`Sends an embed for the lyrics of a song`)
             .addStringOption(option =>
                 option.setName('title')
                     .setDescription('The song title to look up')

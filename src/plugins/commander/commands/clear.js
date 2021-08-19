@@ -1,6 +1,7 @@
 const {MessageMentions} = require('discord.js');
 const got = require('got');
-const {promisify} = require('util');
+const { promisify } = require('util');
+const { SlashCommandBuilder } = require('@discordjs/builders');
 const wait = promisify(setTimeout);
 const CommandUtils = require('../structs/CommandUtils.js');
 const AdminCommand = require('../structs/AdminCommand.js');
@@ -9,6 +10,16 @@ class ClearCommand extends AdminCommand {
     constructor(bot) {
         super(bot);
         this.aliases = ['clear', 'clean', 'clr', 'purge'];
+        this.schema = new SlashCommandBuilder()
+            .addIntegerOption(option =>
+                option.setName('count')
+                    .setDescription('The number of messages to clear')
+            )
+            .addIntegerOption(option =>
+                option.setName('target')
+                    .setDescription('The user to delete from')
+            );
+
         this.CHECKMARK = '✅';
         this.CROSS = '❌';
         this.DISCORD_EPOCH = 1420070400000;

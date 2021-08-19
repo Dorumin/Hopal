@@ -1,3 +1,4 @@
+const { SlashCommandBuilder } = require('@discordjs/builders');
 const Command = require('../structs/Command.js');
 const FormatterPlugin = require('../../fmt');
 const { MessageEmbed } = require('discord.js');
@@ -12,6 +13,12 @@ class ReverseImageSearchCommand extends Command {
     constructor(bot) {
         super(bot);
         this.aliases = ['ris'];
+        this.schema = new SlashCommandBuilder()
+            .addStringOption(option =>
+                option.setName('url')
+                    .setDescription('The url of the image you want to reverse search')
+                    .setRequired(true)
+            );
 
         this.shortdesc = `Provides reverse image search links`;
         this.desc = `

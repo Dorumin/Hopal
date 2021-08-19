@@ -70,10 +70,12 @@ class ServerTrackerPlugin extends Plugin {
     }
 
     load() {
+        return;
         this.bot.tracker = new ServerTracker(this.bot);
     }
 
     cleanup() {
+        return;
         this.bot.tracker.worker.terminate();
     }
 }
