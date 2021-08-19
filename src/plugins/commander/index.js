@@ -7,6 +7,7 @@ const Collection = require('../../structs/Collection.js');
 const Cache = require('../../structs/Cache.js');
 const LoggerPlugin = require('../logger');
 const FormatterPlugin = require('../fmt');
+const { MessageMentions } = require('discord.js');
 
 // Copy the useful ones from https://discord.js.org/#/docs/main/stable/class/CommandInteraction if you need
 const INTERACTION_REFLECT_KEYS = [
@@ -36,6 +37,15 @@ class InteractionCompatibilityLayer {
         this.inner = interaction;
 
         this._replied = false;
+
+        let content = '';
+
+        for (const option of interaction.options.data) {
+            content += option.value + ' ';
+        }
+
+        this._unprefixedContent = content.trim();
+        this.content = '/' + this.inner.commandName + ' ' + content.trim();
 
         for (const key of INTERACTION_REFLECT_KEYS) {
             this[key] = this.inner[key];
@@ -72,10 +82,18 @@ class InteractionCompatibilityLayer {
     }
 
     get mentions() {
-        return {
-            members: new Collection(),
-            users: new Collection()
-        };
+        const users = new Collection();
+
+        for (const match of this._unprefixedContent.matchAll(MessageMentions.USERS_PATTERN)) {
+            const id = match[1];
+            const user = this.inner.client.users.cache.get(id);
+
+            if (user) {
+                users.set(id, user);
+            }
+        }
+
+        return new MessageMentions(this, users, null, false, false);
     }
 
     get attachments() {
@@ -130,13 +148,7 @@ class Commander {
         // Rights check or whatever for commands
         if (!command.filter(compat)) return;
 
-        let content = '';
-
-        for (const option of interaction.options.data) {
-            content += option.value + ' ';
-        }
-
-        this.callCommand(command, compat, content.trim(), {
+        this.callCommand(command, compat, compat._unprefixedContent, {
             alias: interaction.commandName,
             interaction: interaction
         });
