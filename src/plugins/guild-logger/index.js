@@ -81,13 +81,15 @@ class GuildLogger {
                 description = `The ${emoji} emoji was created`;
             }
 
-            await channel.send(
-                new MessageEmbed()
-                    .setDescription(description)
-                    .setImage(emoji.url)
-                    .setFooter('Emoji create')
-                    .setTimestamp()
-            );
+            await channel.send({
+                embeds: [
+                    new MessageEmbed()
+                        .setDescription(description)
+                        .setImage(emoji.url)
+                        .setFooter('Emoji create')
+                        .setTimestamp()
+                ]
+            });
         }
     }
 
@@ -108,35 +110,38 @@ class GuildLogger {
             const channel = newGuild.channels.cache.get(listener.channelId);
             if (!channel) continue;
 
-            await channel.send(
+            await channel.send({
                 // This embed has duplicate thumbnail and footer icon
                 // I believe footer icons are so smol they're saved forever,
                 // while thumbnails are cached in the media proxy for a bit
                 // Eventually the old server icon would be deleted,
                 // and it will live on in the footer
                 // The new icon is uploaded directly
-                new MessageEmbed()
-                    .setDescription('The guild icon was changed')
-                    .setImage(
-                        oldGuild.iconURL({
-                            format: 'png',
-                            dynamic: true,
-                            size: 2048
-                        })
-                    )
-                    .setFooter('Guild icon change',
-                        oldGuild.iconURL({
-                            format: 'png',
-                            dynamic: true,
-                            size: 2048
-                        })
-                    )
-                    .setTimestamp()
-            );
+                embeds: [
+                    new MessageEmbed()
+                        .setDescription('The guild icon was changed')
+                        .setImage(
+                            oldGuild.iconURL({
+                                format: 'png',
+                                dynamic: true,
+                                size: 2048
+                            })
+                        )
+                        .setFooter('Guild icon change',
+                            oldGuild.iconURL({
+                                format: 'png',
+                                dynamic: true,
+                                size: 2048
+                            })
+                        )
+                        .setTimestamp()
+                ]
+            });
 
             const newIconAnim = newGuild.icon.startsWith('a_');
 
-            await channel.send('New icon:', {
+            await channel.send({
+                content: 'New icon:',
                 files: [
                     new MessageAttachment(
                         newGuild.iconURL({
@@ -176,14 +181,16 @@ class GuildLogger {
                 // }
             }
 
-            await channel.send(
-                new MessageEmbed()
-                    .setTitle('Message link')
-                    .setURL(newMessage.url)
-                    .setDescription(description)
-                    .setFooter('Message edit', newMessage.author.avatarURL())
-                    .setTimestamp()
-            );
+            await channel.send({
+                embeds: [
+                    new MessageEmbed()
+                        .setTitle('Message link')
+                        .setURL(newMessage.url)
+                        .setDescription(description)
+                        .setFooter('Message edit', newMessage.author.avatarURL())
+                        .setTimestamp()
+                ]
+            });
         }
     }
 
@@ -235,14 +242,16 @@ class GuildLogger {
                 description += message.content;
             }
 
-            await channel.send(
-                new MessageEmbed()
-                    .setTitle('Message link')
-                    .setURL(message.url)
-                    .setDescription(description)
-                    .setFooter('Message delete', message.author.avatarURL())
-                    .setTimestamp()
-            );
+            await channel.send({
+                embeds: [
+                    new MessageEmbed()
+                        .setTitle('Message link')
+                        .setURL(message.url)
+                        .setDescription(description)
+                        .setFooter('Message delete', message.author.avatarURL())
+                        .setTimestamp()
+                ]
+            });
 
             for (const attachment of message.attachments.values()) {
                 await channel.send({
@@ -296,12 +305,14 @@ class GuildLogger {
             const member = guild.members.cache.get(userId);
 
             if (channel && voiceChannel && member) {
-                await channel.send(
-                    new MessageEmbed()
-                        .setDescription(`<@${userId}> joined the voice channel ${this.bot.fmt.bold(voiceChannel.name)}`)
-                        .setFooter('Voice join', member.user.avatarURL())
-                        .setTimestamp()
-                );
+                await channel.send({
+                    embeds: [
+                        new MessageEmbed()
+                            .setDescription(`<@${userId}> joined the voice channel ${this.bot.fmt.bold(voiceChannel.name)}`)
+                            .setFooter('Voice join', member.user.avatarURL())
+                            .setTimestamp()
+                    ]
+                });
             } else {
                 console.log('Missing a cache entry in log event');
                 console.log(channel);
@@ -322,12 +333,14 @@ class GuildLogger {
             const member = guild.members.cache.get(userId);
 
             if (channel && voiceChannel && member) {
-                await channel.send(
-                    new MessageEmbed()
-                        .setDescription(`<@${userId}> left the voice channel ${this.bot.fmt.bold(voiceChannel.name)}`)
-                        .setFooter('Voice leave', member.user.avatarURL())
-                        .setTimestamp()
-                );
+                await channel.send({
+                    embeds: [
+                        new MessageEmbed()
+                            .setDescription(`<@${userId}> left the voice channel ${this.bot.fmt.bold(voiceChannel.name)}`)
+                            .setFooter('Voice leave', member.user.avatarURL())
+                            .setTimestamp()
+                    ]
+                });
             } else {
                 console.log('Missing a cache entry in log event');
                 console.log(channel);
@@ -348,12 +361,14 @@ class GuildLogger {
             const member = guild.members.cache.get(userId);
 
             if (channel && voiceChannel && member) {
-                await channel.send(
-                    new MessageEmbed()
-                        .setDescription(`<@${userId}> started streaming in ${this.bot.fmt.bold(voiceChannel.name)}`)
-                        .setFooter('Stream start', member.user.avatarURL())
-                        .setTimestamp()
-                );
+                await channel.send({
+                    embeds: [
+                        new MessageEmbed()
+                            .setDescription(`<@${userId}> started streaming in ${this.bot.fmt.bold(voiceChannel.name)}`)
+                            .setFooter('Stream start', member.user.avatarURL())
+                            .setTimestamp()
+                    ]
+                });
             } else {
                 console.log('Missing a cache entry in log event');
                 console.log(channel);
@@ -374,12 +389,14 @@ class GuildLogger {
             const member = guild.members.cache.get(userId);
 
             if (channel && voiceChannel && member) {
-                await channel.send(
-                    new MessageEmbed()
-                        .setDescription(`<@${userId}> stopped streaming in ${this.bot.fmt.bold(voiceChannel.name)}`)
-                        .setFooter('Stream end', member.user.avatarURL())
-                        .setTimestamp()
-                );
+                await channel.send({
+                    embeds: [
+                        new MessageEmbed()
+                            .setDescription(`<@${userId}> stopped streaming in ${this.bot.fmt.bold(voiceChannel.name)}`)
+                            .setFooter('Stream end', member.user.avatarURL())
+                            .setTimestamp()
+                    ]
+                });
             } else {
                 console.log('Missing a cache entry in log event');
                 console.log(channel);
@@ -432,20 +449,22 @@ class GuildLogger {
                 }
             } catch(e) {}
 
-            await channel.send(
-                new MessageEmbed()
-                    .setDescription(`<@${newMember.user.id}> changed its nickname`)
-                    .addField('Old nickname', oldMember.nickname || '*<none>*')
-                    .addField('New nickname', newMember.nickname || '*<none>*')
-                    .setFooter('Nickname change',
-                        newMember.user.avatarURL({
-                            format: 'png',
-                            dynamic: true,
-                            size: 32
-                        })
-                    )
-                    .setTimestamp()
-            );
+            await channel.send({
+                embeds: [
+                    new MessageEmbed()
+                        .setDescription(`<@${newMember.user.id}> changed its nickname`)
+                        .addField('Old nickname', oldMember.nickname || '*<none>*')
+                        .addField('New nickname', newMember.nickname || '*<none>*')
+                        .setFooter('Nickname change',
+                            newMember.user.avatarURL({
+                                format: 'png',
+                                dynamic: true,
+                                size: 32
+                            })
+                        )
+                        .setTimestamp()
+                ]
+            });
         }
     }
 
@@ -499,7 +518,9 @@ class GuildLogger {
                 embed.addField('Removed roles', removed.map(role => `<@&${role.id}>`).join('\n'));
             }
 
-            await channel.send(embed);
+            await channel.send({
+                embeds: [ embed ]
+            });
         }
     }
 }
