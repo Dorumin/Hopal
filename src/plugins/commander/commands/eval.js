@@ -3,7 +3,14 @@ const util = require('util');
 const child_process = require('child_process');
 const got = require('got');
 const { parse, HTMLElement, TextNode } = require('node-html-parser');
-const { BaseManager, MessageAttachment, MessageEmbed, SnowflakeUtil } = require('discord.js');
+const {
+    BaseManager,
+    MessageAttachment,
+    MessageActionRow,
+    MessageButton,
+    MessageEmbed,
+    SnowflakeUtil
+} = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const Command = require('../structs/Command.js');
 const OPCommand = require('../structs/OPCommand.js');
@@ -375,6 +382,8 @@ class EvalCommand extends OPCommand {
             MessageAttachment: MessageAttachment,
             Embed: MessageEmbed,
             MessageEmbed: MessageEmbed,
+            MessageActionRow: MessageActionRow,
+            MessageButton: MessageButton,
 
             Snowflake: SnowflakeUtil,
             SnowflakeUtil: SnowflakeUtil,

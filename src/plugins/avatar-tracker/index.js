@@ -31,7 +31,8 @@ class AvatarTracker {
     onUserAvatarChange(user) {
         if (!this.users.has(user.id)) return;
 
-        user.send(`Here's your new avatar!`, {
+        user.send({
+            content: `Here's your new avatar!`,
             files: [
                 this.getAvatar(user)
             ]
