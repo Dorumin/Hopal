@@ -49,7 +49,7 @@ class LyricsCommand extends Command {
             // Discord.js v13 removed presence from User objects, so you can
             // only get it from GuildMember instances
             // This tries to get it by checking all cached members
-            for (const guild of client.guilds.cache.values()) {
+            for (const guild of this.bot.client.guilds.cache.values()) {
                 if (guild.members.cache.has(message.author.id)) {
                     target = guild.members.cache.get(message.author.id);
                     break;
@@ -71,17 +71,17 @@ class LyricsCommand extends Command {
                 activity.type === 'LISTENING'
             );
 
-            if (spotify) {
-                const {
-                    details: title,
-                    state: artist
-                } = spotify;
-
-                search = `${title} ${artist}`;
-            } else {
+            if (!spotify) {
                 message.channel.send('Supply a search query.');
                 return;
             }
+
+            const {
+                details: title,
+                state: artist
+            } = spotify;
+
+            search = `${title} ${artist}`;
         }
 
         const songs = await this.searchGenius(search);
