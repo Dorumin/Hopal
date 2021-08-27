@@ -61,7 +61,7 @@ class LyricsCommand extends Command {
 
         if (!search) {
             if (!target) {
-                message.channel.send('Supply a search query.');
+                await message.channel.send('Supply a search query.');
                 return;
             }
 
@@ -72,7 +72,7 @@ class LyricsCommand extends Command {
             );
 
             if (!spotify) {
-                message.channel.send('Supply a search query.');
+                await message.channel.send('Supply a search query.');
                 return;
             }
 
