@@ -30,8 +30,7 @@ class LyricsCommand extends Command {
     }
 
     async call(message, content) {
-        let target = message.mentions.members.first();
-        let isUser = false;
+        let target = message.mentions.members?.first();
 
         if (!target) {
             const id = content.match(/\d{8,}/);

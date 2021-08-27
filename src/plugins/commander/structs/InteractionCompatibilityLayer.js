@@ -60,7 +60,7 @@ class InteractionCompatibilityLayer {
         this.inner = interaction;
 
         this._replied = false;
-        this._succeeded = true;
+        this._succeeded = false;
 
         const content = InteractionCompatibilityLayer.stringifyOptions(interaction.options.data);
 
@@ -134,6 +134,10 @@ class InteractionCompatibilityLayer {
         // Passing `users` to the mentions constructor seems to do weird stuff
         // You end up with invalid structures with all null fields
         mentions.users = users;
+
+        if (!this.guild) {
+            mentions._members = new Collection();
+        }
 
         return mentions;
     }
