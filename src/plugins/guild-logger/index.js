@@ -231,11 +231,11 @@ class GuildLogger {
                 description += `\n\n`;
 
                 if (message.reference) {
-                    const { guildID, channelID, messageID } = message.reference;
+                    const { guildId, channelId, messageId } = message.reference;
 
                     description += this.bot.fmt.link(
                         'Reply to',
-                        `https://discord.com/channels/${guildID}/${channelID}/${messageID}`
+                        `https://discord.com/channels/${guildId}/${channelId}/${messageId}`
                     ) + '\n';
                 }
 
@@ -264,14 +264,14 @@ class GuildLogger {
     }
 
     onVoiceStateUpdate(prevState, curState) {
-        // If channelID was null or undefined, user wasn't/isn't in VC
-        const hasJoined = prevState.channelID == undefined;
-        const hasLeft = curState.channelID == undefined;
+        // If channelId was null or undefined, user wasn't/isn't in VC
+        const hasJoined = prevState.channelId == undefined;
+        const hasLeft = curState.channelId == undefined;
 
         const startedStreaming = !prevState.streaming && curState.streaming;
         const stoppedStreaming = prevState.streaming && !curState.streaming;
 
-        const { guild, id: userId, channelID: channelId } = prevState;
+        const { guild, id: userId, channelId } = prevState;
 
         if (hasJoined) {
             this.onUserJoinVoice({ guild, userId, channelId });

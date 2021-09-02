@@ -58,8 +58,8 @@ class TranslateCommand extends Command {
         text = this.removeMentions(text);
 
         let stillNothing = true;
-        if (!text && message.reference && message.channel.id === message.reference.channelID) {
-            const referenced = await message.channel.messages.fetch(message.reference.messageID);
+        if (!text && message.reference && message.channel.id === message.reference.channelId) {
+            const referenced = await message.channel.messages.fetch(message.reference.messageId);
 
             if (referenced.content) {
                 text = referenced.content;

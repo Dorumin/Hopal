@@ -28,9 +28,11 @@ class EmojiCommand extends Command {
         let match = content.match(EMOJI_REGEX);
 
         if (match === null && message.reference) {
-            const referenced = await message.channel.messages.fetch(message.reference.messageID);
+            const referenced = await message.channel.messages.fetch(message.reference.messageId);
 
-            match = referenced.content.match(EMOJI_REGEX);
+            if (referenced && referenced.content) {
+                match = referenced.content.match(EMOJI_REGEX);
+            }
         }
 
         if (match === null) {
