@@ -43,12 +43,14 @@ class EmojiCommand extends Command {
         const id = match[3];
         const ext = animated ? 'gif' : 'png';
 
-        await message.channel.send(
-            new MessageEmbed()
-                .setTitle(`Emoji link: ${name}`)
-                .setURL(`https://cdn.discordapp.com/emojis/${id}.${ext}`)
-                .setImage(`https://cdn.discordapp.com/emojis/${id}.${ext}`)
-        );
+        await message.channel.send({
+            embeds: [
+                new MessageEmbed()
+                    .setTitle(`Emoji link: ${name}`)
+                    .setURL(`https://cdn.discordapp.com/emojis/${id}.${ext}`)
+                    .setImage(`https://cdn.discordapp.com/emojis/${id}.${ext}`)
+            ]
+        });
     }
 }
 
