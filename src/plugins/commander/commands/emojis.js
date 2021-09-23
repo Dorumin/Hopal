@@ -29,48 +29,49 @@ class EmojisCommand extends AdminCommand {
         const staticEmoji = emojis.filter(emoji => !emoji.animated);
         const animatedEmoji = emojis.filter(emoji => emoji.animated);
 
-        const embeds = [];
+        const messages = [];
 
-        let embed = new MessageEmbed();
+        let content = '';
+        // Jumbo emojis seem to cap at 27 per message;
+        // send another message once content exceeds 2k char or 27 emotes
+        let emojisSent = 0;
 
-        embed.setTitle(`${staticEmoji.size} emojis`);
+        // embed.setTitle(`${staticEmoji.size} emojis`);
 
-        let description = '';
         for (const emoji of staticEmoji.values()) {
-            const line = `${emoji} ${emoji.name}\n`;
+            const emojiStr = `${emoji}`;
 
-            if (description.length + line.length > 2048) {
-                embed.setDescription(description);
-                description = '';
-
-                embeds.push(embed);
-                embed = new MessageEmbed();
+            if (content.length + emojiStr.length > 2000 || emojisSent >= 27) {
+                messages.push(content);
+                content = '';
+                emojisSent = 0;
             }
 
-            description += line;
+            content += emojiStr;
+            emojisSent++;
         }
 
-        embed.setDescription(description);
+        messages.push(content);
+        content = '';
+        emojisSent = 0;
 
-        let field = '';
         for (const emoji of animatedEmoji.values()) {
-            const line = `${emoji} ${emoji.name}\n`;
+            const emojiStr = `${emoji}`;
 
-            if (field.length + line.length > 1024) {
-                embed.addField(`${animatedEmoji.size} animated emojis`, field);
-
-                field = '';
+            if (content.length + emojiStr.length > 2000 || emojisSent >= 27) {
+                messages.push(content);
+                content = '';
+                emojisSent = 0;
             }
 
-            field += line;
+            content += emojiStr;
+            emojisSent++;
         }
 
-        embed.addField(`${animatedEmoji.size} animated emojis`, field);
+        messages.push(content);
 
-        embeds.push(embed);
-
-        for (const embed of embeds) {
-            await message.channel.send(embed);
+        for (const content of messages) {
+            await message.channel.send(content);
         }
     }
 }
