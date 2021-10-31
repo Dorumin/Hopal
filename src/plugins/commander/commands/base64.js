@@ -50,4 +50,4 @@ class Base64Command extends Command {
     }
 }
 
-module.exports = Base64Command;
+module.exports = Base64Command; 
