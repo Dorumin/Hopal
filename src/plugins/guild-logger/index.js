@@ -173,12 +173,12 @@ class GuildLogger {
                 description += `\n\nContent was:\n${oldMessage.content}`;
 
                 // Not that necessary
-                //
-                // const extra = '\n\nNow is:\n' + newMessage.content;
-                //
-                // if ((description + extra).length <= 2048) {
-                //     description += extra;
-                // }
+                // It's not that necessary but I want it
+                const extra = '\n\nNow it\'s:\n' + newMessage.content;
+                
+                if ((description + extra).length <= 2048) {
+                    description += extra;
+                }
             }
 
             await channel.send({
