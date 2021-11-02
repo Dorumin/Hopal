@@ -17,7 +17,7 @@ class OperatorCommand extends OPCommand {
     }
 
     formatUsers(users) {
-        if (users.length === 1) {
+        if (users.size === 1) {
             return `${users[0]} was`;
         } else {
             const last = users.pop();
@@ -30,7 +30,7 @@ class OperatorCommand extends OPCommand {
         const users = message.mentions.users;
         const usernames = [];
         
-        if (users.length === 0) {
+        if (users.size === 0) {
             await message.channel.send(`You must mention a user to add to the list of operators!`);
         } else {
             for (const user of users) {
