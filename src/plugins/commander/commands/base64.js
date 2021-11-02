@@ -16,22 +16,32 @@ class Base64Command extends Command {
     splitFirst(string, scan) {
         const index = string.indexOf(scan);
         if (index === -1) {
-            return [string];
+            return [ string ];
         }
 
-        return [string.slice(0, index), string.slice(index + scan.length)];
+        return [
+            string.slice(0, index),
+            string.slice(index + scan.length)
+        ];
+    }
+
+    isValidUTF8(buffer) {
+        return Buffer.compare(Buffer.from(buffer.toString(), 'utf8'), buffer) === 0;
     }
 
     async call(message, content) {
-        const split = this.splitFirst(content, ' ');
-        const [ arg, string ] = split;
+        if (!content) {
+            await message.channel.send('Please supply a string to encode or decode.');
+            return;
+        }
+        const [ mode, string ] = this.splitFirst(content, ' ');
 
         let result;
-        switch (arg) {
+        switch (mode) {
             case 'd':
             case 'decode':
             case 'decrypt':
-                result = Buffer.from(string, 'base64').toString();
+                result = Buffer.from(string, 'base64').toString('utf8');
                 break;
             case 'e':
             case 'encode':
@@ -39,9 +49,11 @@ class Base64Command extends Command {
                 result = Buffer.from(string, 'utf8').toString('base64');
                 break;
             default:
-                try {
-                    result = Buffer.from(content, 'base64').toString();
-                } catch(e) {
+                const buffer = Buffer.from(content, 'base64');
+
+                if (this.isValidUTF8(buffer)) {
+                    result = buffer.toString('utf8');
+                } else {
                     result = Buffer.from(content, 'utf8').toString('base64');
                 }
         }
@@ -50,4 +62,4 @@ class Base64Command extends Command {
     }
 }
 
-module.exports = Base64Command; 
+module.exports = Base64Command;

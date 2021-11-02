@@ -1,4 +1,3 @@
-const { MessageEmbed } = require('discord.js');
 const AdminCommand = require('../structs/AdminCommand.js');
 const FormatterPlugin = require('../../fmt');
 
