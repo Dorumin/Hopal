@@ -33,7 +33,7 @@ class OperatorCommand extends OPCommand {
         if (users.size === 0) {
             await message.channel.send(`You must mention a user to add to the list of operators!`);
         } else {
-            for (const user of users) {
+            for (const user of users.values()) {
                 this.bot.operators.push(user.id);
                 usernames.push(user.username);
             }
