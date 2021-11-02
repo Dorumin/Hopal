@@ -17,7 +17,7 @@ class OperatorCommand extends OPCommand {
     }
 
     formatUsers(users) {
-        if (users.size === 1) {
+        if (users.length === 1) {
             return `${users[0]} was`;
         } else {
             const last = users.pop();
