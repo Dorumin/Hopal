@@ -29,15 +29,16 @@ class OperatorCommand extends OPCommand {
     async call(message, content) {
         const users = message.mentions.users;
         const usernames = [];
-      
-        if (users.length) {
+        
+        if (users.length === 0) {
+            await message.channel.send(`You must mention a user to add to the list of operators!`);
+        } else {
             for (const user of users) {
                 this.bot.operators.push(user.id);
                 usernames.push(user.username);
             }
-        }
-      
-        await message.channel.send(`${this.formatUsers(usernames)} added to the list of operators!`);
+            await message.channel.send(`${this.formatUsers(usernames)} added to the list of operators!`);
+        }        
     }
 }
 
