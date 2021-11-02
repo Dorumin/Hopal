@@ -18,7 +18,7 @@ class OperatorCommand extends OPCommand {
 
     formatUsers(users) {
         if (users.length === 1) {
-            return `${users} was`;
+            return `${users[0]} was`;
         } else {
             const last = users.pop();
             return `${users.join(', ')} and ${last} were`;
