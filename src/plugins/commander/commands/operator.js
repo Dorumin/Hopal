@@ -5,7 +5,7 @@ const OPCommand = require('../structs/OPCommand.js');
 class OperatorCommand extends OPCommand {
     constructor(bot) {
         super(bot);
-        this.aliases = ['operator', 'o'];
+        this.aliases = ['operator', 'op', 'o'];
         this.hidden = true;
         this.shortdesc = `Temporarily adds a user to the operators list.`;
         this.desc = `
