@@ -37,7 +37,7 @@ class OperatorCommand extends OPCommand {
             }
         }
       
-        await message.channel.send(`${formatUsers(usernames)} added to the list of operators!`);
+        await message.channel.send(`${this.formatUsers(usernames)} added to the list of operators!`);
     }
 }
 
