@@ -2,6 +2,8 @@ const path = require('path');
 const util = require('util');
 const child_process = require('child_process');
 const got = require('got');
+const acorn = require('acorn');
+const escodegen = require('escodegen');
 const { parse, HTMLElement, TextNode } = require('node-html-parser');
 const {
     BaseManager,
@@ -290,28 +292,28 @@ class EvalCommand extends OPCommand {
         // Strip any leading semicolons, this shouldn't break anything
         code = code.trim().replace(/;+$/g, '').trim();
 
-        // Transform `v.await`s to `(await v)`
-        let postfixMatch;
-        while ((postfixMatch = code.match(/\.await\b/)) !== null) {
-            // Try to find the start of the expression
-            // We do this by backtracking to the first semicolon
-            // or the start of the string
-            // In the future this could be better
-            // by filtering out semicolons inside strings
+        // // Transform `v.await`s to `(await v)`
+        // let postfixMatch;
+        // while ((postfixMatch = code.match(/\.await\b/)) !== null) {
+        //     // Try to find the start of the expression
+        //     // We do this by backtracking to the first semicolon
+        //     // or the start of the string
+        //     // In the future this could be better
+        //     // by filtering out semicolons inside strings
 
-            // Warning: some real fuckin ugly index code ahead
-            const lastSemi = code.lastIndexOf(';', postfixMatch.index);
+        //     // Warning: some real fuckin ugly index code ahead
+        //     const lastSemi = code.lastIndexOf(';', postfixMatch.index);
 
-            // This branch is completely unnecessary but I like it here
-            if (lastSemi === -1) {
-                code = `(await ` + code.slice(0, postfixMatch.index) + ')'
-                    + code.slice(postfixMatch.index + postfixMatch[0].length);
-            } else {
-                code = code.slice(0, lastSemi + 1) + `(await `
-                    + code.slice(lastSemi + 1, postfixMatch.index) + ')'
-                    + code.slice(postfixMatch.index + postfixMatch[0].length);
-            }
-        }
+        //     // This branch is completely unnecessary but I like it here
+        //     if (lastSemi === -1) {
+        //         code = `(await ` + code.slice(0, postfixMatch.index) + ')'
+        //             + code.slice(postfixMatch.index + postfixMatch[0].length);
+        //     } else {
+        //         code = code.slice(0, lastSemi + 1) + `(await `
+        //             + code.slice(lastSemi + 1, postfixMatch.index) + ')'
+        //             + code.slice(postfixMatch.index + postfixMatch[0].length);
+        //     }
+        // }
 
         // TODO: Do the greatest regex trick for these
         const isAsync = code.includes('await');
@@ -323,6 +325,8 @@ class EvalCommand extends OPCommand {
             `    ${isExpression ? 'return ' : ''}${code};\n` +
             `})()`;
         }
+        
+        code = this.postfixAwaitTransform(code);
 
         return new Code({
             code,
@@ -331,7 +335,103 @@ class EvalCommand extends OPCommand {
         });
     }
 
-    getVars(message) {
+    postfixAwaitTransform(code) {
+        let tree;
+        try {
+            tree = acorn.parse(code, {
+                ecmaVersion: 2021
+            });
+        } catch(e) {
+            return code;
+        }
+
+        function handleNode(node) {
+            if (!node) return;
+
+            switch (node.type) {
+                case 'Program':
+                case 'ArrowFunctionExpression':
+                case 'BlockStatement':
+                    if (Array.isArray(node.body)) {
+                        node.body.forEach(handleNode);
+                    } else {
+                        handleNode(node.body);
+                    }
+                    break;
+                case 'VariableDeclaration':
+                    node.declarations.forEach(handleNode);
+                    break;
+                case 'VariableDeclarator':
+                    handleNode(node.id);
+                    handleNode(node.init);
+                    break;
+                case 'ArrayExpression':
+                    node.elements.forEach(handleNode);
+                    break;
+                case 'ObjectExpression':
+                    node.properties.forEach(handleNode);
+                    break;
+                case 'Property':
+                    handleNode(node.key);
+                    handleNode(node.value);
+                    break;
+                case 'ExpressionStatement':
+                    handleNode(node.expression);
+                    break;
+                case 'WhileStatement':
+                    handleNode(node.test);
+                    handleNode(node.body);
+                    break;
+                case 'CallExpression':
+                    handleNode(node.callee);
+                    node.arguments.forEach(handleNode);
+                    break;
+                case 'AwaitExpression':
+                case 'UpdateExpression':
+                case 'ReturnStatement':
+                    handleNode(node.argument);
+                    break;
+                case 'BinaryExpression':
+                    handleNode(node.left);
+                    handleNode(node.right);
+                    break;
+                case 'MemberExpression':
+                    const prop = node.property;
+                    if (prop && prop.type === 'Identifier' && prop.name === 'await') {
+                        // Do the .await transformation
+                        node.type = 'AwaitExpression';
+                        node.argument = node.object;
+                        delete node.object;
+                        delete node.property;
+                        delete node.optional;
+                        delete node.computed;
+
+                        handleNode(node.argument);
+                    } else {
+                        handleNode(node.object);
+                        handleNode(node.property);
+                    }
+                    break;
+                case 'Identifier':
+                case 'Literal':
+                case 'EmptyStatement':
+                    break;
+                default:
+                    console.warn(`Unhandled acorn node type: ${node.type}`, node);
+                    break;
+            }
+        }
+
+        handleNode(tree);
+
+        try {
+            return escodegen.generate(tree);
+        } catch(e) {
+            return code;
+        }
+    }
+
+    getVars(message, content) {
         return {
             send: (arg) => {
                 if (
@@ -347,6 +447,7 @@ class EvalCommand extends OPCommand {
                 }
 
                 const promise = this.respond(arg, {
+                    message: message,
                     channel: message.channel
                 });
 
@@ -370,6 +471,7 @@ class EvalCommand extends OPCommand {
             // members: this.bot.client.members,
 
             // Context related stuff
+            content: content,
             message: message,
             channel: message.channel,
             member: message.member,
@@ -389,8 +491,8 @@ class EvalCommand extends OPCommand {
             SnowflakeUtil: SnowflakeUtil,
 
             // Module stuff
-            got: require('got'),
             fs: require('fs'),
+            got: require('got'),
             path: require('path'),
             util: require('util'),
 
@@ -620,7 +722,7 @@ class EvalCommand extends OPCommand {
         return this.sendCodeBlock(channel, codeBlock);
     }
 
-    async respond(result, context, code) {
+    async respond(result, context, code, debug) {
         const { channel, message: originalMessage } = context;
 
         if (result === null) {
@@ -819,7 +921,7 @@ class EvalCommand extends OPCommand {
 
     async call(message, content) {
         const code = await this.getCode(message, content);
-        const context = this.getVars(message);
+        const context = this.getVars(message, content);
         const { result } = await this.evaluate(code, context);
 
         if (result && result instanceof Error && result.inner) {
@@ -827,7 +929,7 @@ class EvalCommand extends OPCommand {
                 this.bot.fmt.codeBlock('apache', `${result.inner}`)
             );
         } else {
-            await this.respond(result, context, code);
+            await this.respond(result, context, code, message);
         }
 
         const exported = context.module.exports;
