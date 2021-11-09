@@ -95,9 +95,14 @@ class GuildLogger {
 
     onGuildUpdate(oldGuild, newGuild) {
         const changedIcon = oldGuild.icon !== newGuild.icon;
+        const changedName = oldGuild.name !== newGuild.name;
 
         if (changedIcon) {
             this.onGuildIconChange(oldGuild, newGuild);
+        }
+        
+        if (changedName) {
+            this.onGuildNameChange(oldGuild, newGuild);
         }
     }
 
@@ -151,6 +156,34 @@ class GuildLogger {
                         }),
                         `icon.${newIconAnim ? 'gif' : 'png'}`
                     )
+                ]
+            });
+        }
+    }
+
+    async onGuildNameChange(oldGuild, newGuild) {
+        if (!this.listeners.GUILD_NAME_CHANGE) return;
+
+        for (const listener of this.listeners.GUILD_NAME_CHANGE) {
+            if (listener.guildId !== newGuild.id) continue;
+
+            const channel = newGuild.channels.cache.get(listener.channelId);
+            if (!channel) continue;
+
+            await channel.send({
+                embeds: [
+                    new MessageEmbed()
+                        .setTitle(`Guild name was updated`)
+                        .addField('Old name', oldGuild.name, true)
+                        .addField('New name', newGuild.name, true)
+                        .setFooter('Guild name change',
+                            message.guild.iconURL({
+                                format: 'png',
+                                dynamic: true,
+                                size: 32
+                            })
+                        )
+                        .setTimestamp()
                 ]
             });
         }
@@ -408,12 +441,18 @@ class GuildLogger {
 
     onGuildMemberUpdate(oldMember, newMember) {
         const nicknameChanged = oldMember.nickname !== newMember.nickname;
+        const usernameChanged = oldMember.user.tag !== newMember.user.tag;
         const updatedRoles = oldMember.roles.cache.difference(newMember.roles.cache);
 
         // TODO: Pending attribution on these two with the audit log
         if (nicknameChanged) {
             this.onNicknameChange(oldMember, newMember);
         }
+
+        if (usernameChanged) {
+            this.onUsernameChange(oldMember, newMember);
+        }
+
 
         if (updatedRoles.size !== 0) {
             this.onRolesUpdate(newMember, updatedRoles);
@@ -429,7 +468,6 @@ class GuildLogger {
             const channel = newMember.guild.channels.cache.get(listener.channelId);
             if (!channel) continue;
 
-
             let description = `<@${newMember.user.id}>'s nickname was changed`;
             try {
                 // Try to find out who updated the nickname
@@ -440,11 +478,12 @@ class GuildLogger {
                 const elapsed = Date.now() - SnowflakeUtil.deconstruct(latest.id).timestamp;
 
                 if (
-                    latest.action === 'MEMBER_ROLE_UPDATE' &&
+                    latest.action === 'MEMBER_UPDATE' &&
                     latest.target.id === member.user.id &&
+                    latest.changes.some(change => change.key === 'nick') &&
                     elapsed < 1000
                 ) {
-                    description = `<@${member.user.id}>'s roles were updated `
+                    description = `<@${member.user.id}>'s nickname was updated `
                         + `by <@${latest.executor.id}>`;
                 }
             } catch(e) {}
@@ -452,10 +491,38 @@ class GuildLogger {
             await channel.send({
                 embeds: [
                     new MessageEmbed()
-                        .setDescription(`<@${newMember.user.id}> changed its nickname`)
-                        .addField('Old nickname', oldMember.nickname || '*<none>*')
-                        .addField('New nickname', newMember.nickname || '*<none>*')
+                        .setDescription(description)
+                        .addField('Old nickname', oldMember.nickname || '*<none>*', true)
+                        .addField('New nickname', newMember.nickname || '*<none>*', true)
                         .setFooter('Nickname change',
+                            newMember.user.avatarURL({
+                                format: 'png',
+                                dynamic: true,
+                                size: 32
+                            })
+                        )
+                        .setTimestamp()
+                ]
+            });
+        }
+    }
+
+    async onUsernameChange(oldMember, newMember) {
+        if (!this.listeners.USERNAME_CHANGE) return;
+
+        for (const listener of this.listeners.USERNAME_CHANGE) {
+            if (listener.guildId !== newMember.guild.id) continue;
+
+            const channel = newMember.guild.channels.cache.get(listener.channelId);
+            if (!channel) continue;
+
+            await channel.send({
+                embeds: [
+                    new MessageEmbed()
+                        .setDescription(`<@${newMember.user.id}> username was changed`)
+                        .addField('Old username', oldMember.user.tag, true)
+                        .addField('New username', newMember.user.tag, true)
+                        .setFooter('Username change',
                             newMember.user.avatarURL({
                                 format: 'png',
                                 dynamic: true,
