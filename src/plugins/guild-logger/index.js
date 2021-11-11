@@ -55,6 +55,7 @@ class GuildLogger {
         this.bot.client.on('messageDelete', this.onMessageDelete.bind(this));
         this.bot.client.on('voiceStateUpdate', this.onVoiceStateUpdate.bind(this));
         this.bot.client.on('guildMemberUpdate', this.onGuildMemberUpdate.bind(this));
+        this.bot.client.on('presenceUpdate', this.onPresenceUpdate.bind(this));
     }
 
     async onEmojiCreate(emoji) {
@@ -438,20 +439,10 @@ class GuildLogger {
             }
         }
     }
-    
-    getGuildMemberStatus(member) {
-        const status = member.presence.activities.find(activity =>
-            activity.name === 'Custom Status' &&
-            activity.type === 'CUSTOM'
-        );
-        
-        return status?.state;
-    }
 
     onGuildMemberUpdate(oldMember, newMember) {
         const nicknameChanged = oldMember.nickname !== newMember.nickname;
         const usernameChanged = oldMember.user.tag !== newMember.user.tag;
-        const statusChanged = this.getGuildMemberStatus(oldMember) !== this.getGuildMemberStatus(newMember);
         const updatedRoles = oldMember.roles.cache.difference(newMember.roles.cache);
 
         // TODO: Pending attribution on these two with the audit log
@@ -461,10 +452,6 @@ class GuildLogger {
 
         if (usernameChanged) {
             this.onUsernameChange(oldMember, newMember);
-        }
-        
-        if (statusChanged) {
-            this.onStatusChange(oldMember, newMember);
         }
 
         if (updatedRoles.size !== 0) {
@@ -548,34 +535,6 @@ class GuildLogger {
         }
     }
 
-    async onStatusChange(oldMember, newMember) {
-        if (!this.listeners.STATUS_CHANGE) return;
-
-        for (const listener of this.listeners.STATUS_CHANGE) {
-            if (listener.guildId !== newMember.guild.id) continue;
-
-            const channel = newMember.guild.channels.cache.get(listener.channelId);
-            if (!channel) continue;
-
-            await channel.send({
-                embeds: [
-                    new MessageEmbed()
-                        .setDescription(`<@${newMember.user.id}>'s status was changed`)
-                        .addField('Old status', this.getGuildMemberStatus(oldMember) ?? '<none>', true)
-                        .addField('New status', this.getGuildMemberStatus(newMember) ?? '<none>', true)
-                        .setFooter('Status change',
-                            newMember.user.avatarURL({
-                                format: 'png',
-                                dynamic: true,
-                                size: 32
-                            })
-                        )
-                        .setTimestamp()
-                ]
-            });
-        }
-    }
-
     async onRolesUpdate(member, updatedRoles) {
         if (!this.listeners.ROLES_UPDATE) return;
 
@@ -628,6 +587,51 @@ class GuildLogger {
 
             await channel.send({
                 embeds: [ embed ]
+            });
+        }
+    }
+
+    onPresenceUpdate(oldPresence, newPresence) {
+        const statusChanged = this.getGuildMemberStatus(oldPresence.member) !== this.getGuildMemberStatus(newPresence.member);
+
+        if (statusChanged) {
+            this.onStatusChange(oldPresence.member, newPresence.member);
+        }
+    }
+
+    getGuildMemberStatus(member) {
+        const status = member.presence.activities.find(activity =>
+            activity.name === 'Custom Status' &&
+            activity.type === 'CUSTOM'
+        );
+        
+        return status?.state;
+    }
+
+    async onStatusChange(oldMember, newMember) {
+        if (!this.listeners.STATUS_CHANGE) return;
+
+        for (const listener of this.listeners.STATUS_CHANGE) {
+            if (listener.guildId !== newMember.guild.id) continue;
+
+            const channel = newMember.guild.channels.cache.get(listener.channelId);
+            if (!channel) continue;
+
+            await channel.send({
+                embeds: [
+                    new MessageEmbed()
+                        .setDescription(`<@${newMember.user.id}>'s status was changed`)
+                        .addField('Old status', this.getGuildMemberStatus(oldMember) ?? '<none>', true)
+                        .addField('New status', this.getGuildMemberStatus(newMember) ?? '<none>', true)
+                        .setFooter('Status change',
+                            newMember.user.avatarURL({
+                                format: 'png',
+                                dynamic: true,
+                                size: 32
+                            })
+                        )
+                        .setTimestamp()
+                ]
             });
         }
     }
