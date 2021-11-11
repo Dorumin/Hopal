@@ -627,8 +627,8 @@ class GuildLogger {
                 embeds: [
                     new MessageEmbed()
                         .setDescription(`<@${newMember.user.id}>'s status was changed`)
-                        .addField('Old status', oldStatus ?? '<none>', true)
-                        .addField('New status', newStatus ?? '<none>', true)
+                        .addField('Old status', oldStatus ?? '*<none>*', true)
+                        .addField('New status', newStatus ?? '*<none>*', true)
                         .setFooter('Status change',
                             newMember.user.avatarURL({
                                 format: 'png',
