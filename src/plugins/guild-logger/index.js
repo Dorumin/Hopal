@@ -592,24 +592,30 @@ class GuildLogger {
     }
 
     onPresenceUpdate(oldPresence, newPresence) {
-        const statusChanged = this.getGuildMemberStatus(oldPresence.member) !== this.getGuildMemberStatus(newPresence.member);
+        const oldStatus = this.getPresenceStatus(oldPresence);
+        const newStatus = this.getPresenceStatus(newPresence);
+        const statusChanged = oldStatus !== newStatus;
 
         if (statusChanged) {
-            this.onStatusChange(oldPresence.member, newPresence.member);
+            this.onStatusChange(newPresence, oldStatus, newStatus);
         }
     }
 
-    getGuildMemberStatus(member) {
-        const status = member.presence.activities.find(activity =>
+    getPresenceStatus(presence) {
+        const status = presence?.activities.find(activity =>
             activity.name === 'Custom Status' &&
             activity.type === 'CUSTOM'
         );
-        
+
         return status?.state;
     }
 
-    async onStatusChange(oldMember, newMember) {
+    async onStatusChange(newPresence, oldStatus, newStatus) {
         if (!this.listeners.STATUS_CHANGE) return;
+
+        const newMember = newPresence.member;
+
+        if (!newMember) return;
 
         for (const listener of this.listeners.STATUS_CHANGE) {
             if (listener.guildId !== newMember.guild.id) continue;
@@ -621,8 +627,8 @@ class GuildLogger {
                 embeds: [
                     new MessageEmbed()
                         .setDescription(`<@${newMember.user.id}>'s status was changed`)
-                        .addField('Old status', this.getGuildMemberStatus(oldMember) ?? '<none>', true)
-                        .addField('New status', this.getGuildMemberStatus(newMember) ?? '<none>', true)
+                        .addField('Old status', oldStatus ?? '<none>', true)
+                        .addField('New status', newStatus ?? '<none>', true)
                         .setFooter('Status change',
                             newMember.user.avatarURL({
                                 format: 'png',
