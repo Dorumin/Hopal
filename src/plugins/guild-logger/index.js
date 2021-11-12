@@ -592,6 +592,8 @@ class GuildLogger {
     }
 
     onPresenceUpdate(oldPresence, newPresence) {
+        if (newPresence.user?.bot) return;
+        
         const oldStatus = this.getPresenceStatus(oldPresence);
         const newStatus = this.getPresenceStatus(newPresence);
         const statusChanged = oldStatus !== newStatus;
