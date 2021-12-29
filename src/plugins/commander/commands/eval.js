@@ -395,6 +395,9 @@ class EvalCommand extends OPCommand {
                     handleNode(node.left);
                     handleNode(node.right);
                     break;
+                case 'SpreadElement':
+                    handleNode(node.argument);
+                    break;
                 case 'MemberExpression':
                     const prop = node.property;
                     if (prop && prop.type === 'Identifier' && prop.name === 'await') {
@@ -509,10 +512,14 @@ class EvalCommand extends OPCommand {
             SnowflakeUtil: SnowflakeUtil,
 
             // Module stuff
-            fs: require('fs'),
-            got: require('got'),
-            path: require('path'),
-            util: require('util'),
+            fs: {
+                ...require('fs'),
+                ...require('fs/promises')
+            },
+            got: got,
+            path: path,
+            util: util,
+            Discord: require('discord.js'),
 
             // For detecting command file evals
             module: {
@@ -740,7 +747,7 @@ class EvalCommand extends OPCommand {
         return this.sendCodeBlock(channel, codeBlock);
     }
 
-    async respond(result, context, code, debug) {
+    async respond(result, context, code) {
         const { channel, message: originalMessage } = context;
 
         if (result === null) {
@@ -949,7 +956,7 @@ class EvalCommand extends OPCommand {
                 this.bot.fmt.codeBlock('apache', `${result.inner}`)
             );
         } else {
-            await this.respond(result, context, code, message);
+            await this.respond(result, context, code);
         }
 
         const exported = context.module.exports;
