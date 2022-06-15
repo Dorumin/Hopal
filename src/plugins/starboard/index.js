@@ -108,7 +108,7 @@ class Starboard {
         if (!guild) return;
 
         // Ignore in dev mode if outside of dev guild
-        if (this.bot.onlyDev(guild)) return;
+        // if (this.bot.onlyDev(guild)) return;
 
         const member = await guild.members.fetch(user.id);
         const isMod = member.permissions.has(MANAGE_MESSAGES);
@@ -223,6 +223,15 @@ class Starboard {
                 image = sticker.url;
             }
         }
+
+        if (image === undefined && message.embeds.length) {
+            const embed = message.embeds.find(embed => embed.image);
+
+            if (embed) {
+                image = embed.image.url;
+            }
+        }
+
 
         if (message.content) {
             if (image === undefined && /^https:\/\/cdn\.discordapp\.com\/attachments\/\d+\/\d+\/\S+$/.test(message.content)) {
