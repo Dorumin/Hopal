@@ -31,7 +31,9 @@ class Hopal {
                 config.HOPAL.INTENTS || []
             ],
             partials: [
-                'CHANNEL'
+                'CHANNEL',
+                'REACTION',
+                'MESSAGE'
             ]
         });
         this.config = config.HOPAL;
@@ -77,6 +79,32 @@ class Hopal {
         });
     }
 
+    listenPartial(event, handler, context) {
+        if (!context) throw new Error(`Must pass a context to the ${event} listener`);
+
+        this.client.on(event, this.wrapListener(handler, context));
+    }
+
+    onlyDev(instance) {
+        if (!this.dev) {
+            return false;
+        }
+
+        if (instance instanceof Guild) {
+            return this.config.DEV?.GUILD !== instance.id;
+        }
+
+        if (instance instanceof Message) {
+            if (instance.guild) {
+                return this.config.DEV?.GUILD !== instance.guild.id;
+            } else {
+                return !this.operators.includes(instance.author?.id);
+            }
+        }
+
+        return false;
+    }
+
     onReady() {
         console.info('ready');
     }
@@ -120,9 +148,9 @@ class Hopal {
     }
 
     wrapListener(listener, context) {
-        return function(arg) {
+        return function() {
             try {
-                return listener.call(context, arg);
+                return listener.apply(context, arguments);
             } catch (error) {
                 return this.bot.reportError('Listener error:', error);
             }

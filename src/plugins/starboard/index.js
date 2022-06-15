@@ -232,7 +232,6 @@ class Starboard {
             }
         }
 
-
         if (message.content) {
             if (image === undefined && /^https:\/\/cdn\.discordapp\.com\/attachments\/\d+\/\d+\/\S+$/.test(message.content)) {
                 image = message.content;
