@@ -30,6 +30,7 @@ class AvatarTracker {
 
     onUserAvatarChange(user) {
         if (!this.users.has(user.id)) return;
+        if (user.avatar === null) return;
 
         user.send({
             content: `Here's your new avatar!`,
