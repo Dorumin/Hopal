@@ -1,23 +1,24 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
+const { MessageAttachment } = require('discord.js');
 const Command = require('../structs/Command.js');
 
-class ProxyCommand extends Command {
+class ReuploadCommand extends Command {
 	constructor(bot) {
 		super(bot);
-		this.aliases = ['proxy'];
+		this.aliases = ['reupload'];
         this.schema = new SlashCommandBuilder()
             .addUserOption(option =>
                 option.setName('target')
-                    .setDescription('User to DM with proxied link')
+                    .setDescription('User to DM with reuploaded file')
                     .setRequired(false)
             );
 
-		this.shortdesc = 'Generates a proxymin link.';
+		this.shortdesc = 'Reuploads a link.';
 		this.desc = `
-					Generates a https://proxymin.herokuapp.com link.
+					Reuploads a link as a file. 8mb limit.
 					Can optionally send the proxied link to a user.`;
 		this.usages = [
-			'!proxy'
+			'!reupload'
 		];
 	}
 
@@ -28,17 +29,14 @@ class ProxyCommand extends Command {
             }
         }
 
-        return encodeURIComponent(decodeURIComponent(content));
+        return content;
     }
 
 	async call(message, content) {
         const startIdMatch = content.match(/^(?:<@!?(\d+)>|(\d+))/);
         const startId = startIdMatch && (startIdMatch[1] ?? startIdMatch[2]);
         const rest = startIdMatch ? content.slice(startIdMatch[0].length).trimStart() : content;
-        const url = this.extractUrlFromMessage(message, rest)
-            // replace first :// encoded with canonical
-            // this is completely aesthetic, the server can handle both versions
-            .replace('%3A%2F%2F', '://');
+        const url = this.extractUrlFromMessage(message, rest);
 
         let channel;
         if (startId) {
@@ -48,7 +46,11 @@ class ProxyCommand extends Command {
             channel = message.channel;
         }
 
-		await channel.send(`https://proxymin.herokuapp.com/${url}`);
+        await channel.send({
+            files: [
+                new MessageAttachment(url)
+            ]
+        });
 
         try {
             await message.suppressEmbeds();
@@ -56,4 +58,4 @@ class ProxyCommand extends Command {
 	}
 }
 
-module.exports = ProxyCommand;
+module.exports = ReuploadCommand;
