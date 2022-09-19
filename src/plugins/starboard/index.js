@@ -41,6 +41,8 @@ class Starboard {
         Object.defineProperty(this, 'bot', { value: bot });
         Object.defineProperty(this, 'config', { value: bot.config.STARBOARD });
 
+        this.dev = bot.config.ENV === 'development';
+
         this.threshold = this.config.THRESHOLD;
         this.guildMap = this.config.GUILDS;
         // this.starboardId = this.config.STARBOARD_ID;
@@ -97,6 +99,8 @@ class Starboard {
         if (message.partial) {
             await message.fetch();
         }
+
+        if (this.dev && message.guild && this.bot.config.DEV.GUILD !== message.guild.id) return;
 
         const starboardId = this.guildMap[message.guild.id];
 
