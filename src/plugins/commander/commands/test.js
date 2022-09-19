@@ -15,7 +15,7 @@ class TestCommand extends OPCommand {
     }
 
     async call(message) {
-        await message.channel.send('Tested!');
+        await message.channel.send(`Tested! Environment: ${this.bot.config.ENV}`);
     }
 }
 
