@@ -187,8 +187,6 @@ class Relay {
 
         console.log('sending', postData.image);
 
-        return;
-
         await channel.send({
             embeds: [
                 new MessageEmbed()
