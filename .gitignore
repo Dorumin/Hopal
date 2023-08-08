@@ -12,3 +12,5 @@ log/
 
 # We use Yarn
 package-lock.json
+
+tmp/

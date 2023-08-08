@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const env = Object.assign({}, process.env);
 
 for (const key in env) {
@@ -13,7 +15,11 @@ for (const key in env) {
 }
 
 try {
-    const config = require('../../config.json');
+    // const config = require('../../config.json');
+    const config = JSON.parse(fs.readFileSync(
+        path.join(__dirname, '..', '..', 'config.json'),
+        { encoding: 'utf-8' }
+    ));
     module.exports = {
         ...env,
         ...config
