@@ -193,8 +193,7 @@ class Relay {
                     .setTitle(postData.filename)
                     .setURL(postData.url)
                     // .setTitle(postData.author)
-                    // .setURL(postData.url)
-                    // .setDescription(postData.text)
+                    .setDescription(postData.text)
                     .setImage(postData.image)
                     // .setFooter({
                     //     text: postData.id
