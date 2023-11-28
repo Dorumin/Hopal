@@ -70,7 +70,7 @@ class ReverseImageSearchCommand extends Command {
 
         const encoded = encodeURIComponent(url);
         const yandex = `https://yandex.com/images/search?rpt=imageview&url=${encoded}`;
-        const google = `https://www.google.com/searchbyimage?image_url=${encoded}`;
+        const google = `https://lens.google.com/uploadbyurl?url=${encoded}`;
         const tineye = `https://www.tineye.com/search?url=${encoded}`;
         const iqdb = `https://www.iqdb.org/?url=${encoded}`;
         const saucenao = `https://saucenao.com/search.php?sort=size&order=desc&url=${encoded}`;
