@@ -94,7 +94,7 @@ class Seen {
         const member = newP.member;
         if (!member) return;
 
-        console.log(`${member.user.username}: ${oldP.status} -> ${newP.status}`);
+        // console.log(`${member.user.username}: ${oldP.status} -> ${newP.status}`);
 
         this.updateOnline(member.id, Date.now());
     }
