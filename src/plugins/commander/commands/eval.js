@@ -7,7 +7,6 @@ const escodegen = require('escodegen');
 const { parse, HTMLElement, TextNode } = require('node-html-parser');
 const {
     BaseManager,
-    MessageAttachment,
     MessageActionRow,
     MessageButton,
     EmbedBuilder,
@@ -502,8 +501,8 @@ class EvalCommand extends OPCommand {
             guild: message.guild,
 
             // Discord.js structures
-            Attachment: MessageAttachment,
-            MessageAttachment: MessageAttachment,
+            Attachment: AttachmentBuilder,
+            MessageAttachment: AttachmentBuilder,
             Embed: EmbedBuilder,
             MessageEmbed: EmbedBuilder,
             EmbedBuilder: EmbedBuilder,
@@ -732,9 +731,9 @@ class EvalCommand extends OPCommand {
         if (codeBlock.isFile) {
             return channel.send({
                 files: [
-                    new MessageAttachment(
+                    new AttachmentBuilder(
                         Buffer.from(codeBlock.code, 'utf8'),
-                        `eval.${codeBlock.ext}`
+                        { name: `eval.${codeBlock.ext}` }
                     )
                 ]
             });

@@ -16,7 +16,7 @@ class FileInteractionsPlugin extends Plugin {
     }
 
     load() {
-        this.bot.seen = new FileInteractions(this.bot);
+        this.bot.fileInteractions = new FileInteractions(this.bot);
     }
 }
 
