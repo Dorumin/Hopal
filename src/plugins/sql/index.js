@@ -17,11 +17,22 @@ class SQL {
         Object.defineProperty(this, 'config', { value: bot.config.SQL });
 
         const persistence = this.config.PERSISTENCE || {};
-        this.dbPath = path.join(__dirname, '..', '..', '..', this.config.PATH);
+        this.dbPath = path.isAbsolute(this.config.PATH)
+            ? this.config.PATH
+            : path.join(__dirname, '..', '..', '..', this.config.PATH);
 
-        fs.mkdirSync(path.dirname(this.dbPath), {
-            recursive: true
-        });
+        try {
+            fs.mkdirSync(path.dirname(this.dbPath), {
+                recursive: true
+            });
+        } catch(e) {
+            // Fall back to project root relative path before bailing.
+            this.dbPath = path.join(__dirname, '..', '..', '..', this.config.PATH);
+
+            fs.mkdirSync(path.dirname(this.dbPath), {
+                recursive: true
+            });
+        }
 
         Object.defineProperty(this, 'stream', {
             value: fs.createWriteStream(

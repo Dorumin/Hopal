@@ -10,7 +10,8 @@ log/
 # Workspace settings
 .vscode/
 
-# We use Yarn
 package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
 tmp/
