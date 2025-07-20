@@ -184,20 +184,29 @@ class FileInteractions {
         if (twitter.ty === 'gif') {
             const newPath = path.join(path.dirname(filePath), `${path.basename(filePath)}.gif`);
 
-            await this.spawn('ffmpeg', [
-                '-i', filePath,
-                // 50fps because gif can only go in increments of centiseconds
-                '-vf', `fps=50,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,
-                // Loop infinitely
-                '-loop', '0',
-                // Just in case
-                '-y',
-                newPath
-            ]);
+            try {
+                await this.spawn('ffmpeg', [
+                    '-i', filePath,
+                    // 50fps because gif can only go in increments of centiseconds
+                    // Palette gen works well but needs heaps of memory
+                    // '-vf', `fps=50,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,
+                    '-vf', `fps=50`,
+                    // Easier on the memory usage and cpu contention
+                    '-threads', '1',
+                    // Loop infinitely
+                    '-loop', '0',
+                    // Just in case
+                    '-y',
+                    newPath
+                ]);
 
-            await fs.rm(filePath);
+                await fs.rm(filePath);
 
-            return newPath;
+                return newPath;
+            } catch(e) {
+                // Converting to gif failed - fall through and return original (undeleted) file
+                console.log('ffmpeg failure - oom likely', e);
+            }
         }
 
         return filePath;
