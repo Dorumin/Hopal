@@ -190,12 +190,13 @@ class Starboard {
     buildStarEmbed(message, reaction) {
         const props = this.getMessageProps(message);
         const embed = new EmbedBuilder()
-            .setAuthor(message.member?.nickname ?? message.author.username,
-                message.author.avatarURL({
+            .setAuthor({
+                name: message.member?.nickname ?? message.author.username,
+                iconURL: message.author.avatarURL({
                     dynamic: false,
                     format: 'png'
                 })
-            )
+            })
             .setTitle('Jump to message')
             .setURL(message.url)
             .setDescription(props.content)
