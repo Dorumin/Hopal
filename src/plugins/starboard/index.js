@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const Plugin = require('../../structs/Plugin.js');
 const SQLPlugin = require('../sql');
 
@@ -115,7 +115,7 @@ class Starboard {
         // if (this.bot.onlyDev(guild)) return;
 
         const member = await guild.members.fetch(user.id);
-        const isMod = member.permissions.has(MANAGE_MESSAGES);
+        const isMod = member.permissions.has(PermissionFlagsBits.ManageMessages);
 
         const starEntry = await this.sql.getStarred.get(message.id);
 

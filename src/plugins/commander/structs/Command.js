@@ -1,3 +1,5 @@
+const { PermissionFlagsBits } = require("discord.js");
+
 class Command {
     constructor(bot) {
         this.bot = bot;
@@ -14,11 +16,11 @@ class Command {
     }
 
     isModerator(message) {
-        return message.guild && message.channel.permissionsFor(message.member.user).any('MANAGE_MESSAGES');
+        return message.guild && message.channel.permissionsFor(message.member.user).any(PermissionFlagsBits.ManageMessages);
     }
 
     isAdmin(message) {
-        return message.guild && message.member.permissions.has('ADMINISTRATOR');
+        return message.guild && message.member.permissions.has(PermissionFlagsBits.Administrator);
     }
 
     filter() {
