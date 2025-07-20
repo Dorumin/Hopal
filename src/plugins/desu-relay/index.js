@@ -46,11 +46,14 @@ class Relay {
         this.bot = desu.bot;
         this.channelId = relay.CHANNEL_ID;
         this.searchQuery = relay.SEARCH;
+        this.disabled = relay.ENABLED === false;
 
         this.lastThread = null;
         this.lastPost = null;
 
         this.bot.client.on('ready', () => {
+            if (this.disabled) return;
+
             this.pastLinks = this.queryPastLinks();
         });
     }
@@ -88,6 +91,8 @@ class Relay {
     }
 
     async search() {
+        if (this.disabled) return;
+
         const res = await got(`https://desuarchive.org/trash/search${this.getSearchString()}`);
         const doc = parse(res.body);
         const postResults = doc.querySelectorAll('.post_is_op').filter(post => {
