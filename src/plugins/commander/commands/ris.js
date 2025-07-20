@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const Command = require('../structs/Command.js');
 const FormatterPlugin = require('../../fmt');
-const { MessageEmbed } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 
 class ReverseImageSearchCommand extends Command {
     static get deps() {
@@ -79,7 +79,7 @@ class ReverseImageSearchCommand extends Command {
         try {
             await message.channel.send({
                 embeds: [
-                    new MessageEmbed()
+                    new EmbedBuilder()
                         .setTitle('Yandex')
                         .setURL(yandex)
                         .setImage(showImage ? url : undefined)

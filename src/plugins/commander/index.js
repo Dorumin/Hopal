@@ -43,10 +43,17 @@ class Commander {
         bot.client.on('interactionCreate', bot.wrapListener(this.onInteraction, this));
     }
 
+    /**
+     *
+     * @param {import('discord.js').Interaction} interaction
+     * @returns
+     */
     async onInteraction(interaction) {
         if (!interaction.isCommand()) return;
 
         const command = this.getAlias(interaction.commandName);
+        if (!command) return;
+
         const compat = new InteractionCompatibilityLayer(interaction);
 
         // Rights check or whatever for commands

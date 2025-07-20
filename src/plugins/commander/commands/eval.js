@@ -10,7 +10,8 @@ const {
     MessageAttachment,
     MessageActionRow,
     MessageButton,
-    MessageEmbed,
+    EmbedBuilder,
+    AttachmentBuilder,
     SnowflakeUtil
 } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
@@ -439,9 +440,9 @@ class EvalCommand extends OPCommand {
             send: (arg) => {
                 if (
                     arg &&
-                    (arg.embed || arg.embeds || arg.file || arg.files || arg instanceof MessageEmbed)
+                    (arg.embed || arg.embeds || arg.file || arg.files || arg instanceof EmbedBuilder)
                 ) {
-                    if (arg instanceof MessageEmbed) {
+                    if (arg instanceof EmbedBuilder) {
                         arg = {
                             embeds: [
                                 arg
@@ -503,8 +504,9 @@ class EvalCommand extends OPCommand {
             // Discord.js structures
             Attachment: MessageAttachment,
             MessageAttachment: MessageAttachment,
-            Embed: MessageEmbed,
-            MessageEmbed: MessageEmbed,
+            Embed: EmbedBuilder,
+            MessageEmbed: EmbedBuilder,
+            EmbedBuilder: EmbedBuilder,
             MessageActionRow: MessageActionRow,
             MessageButton: MessageButton,
 
@@ -812,7 +814,7 @@ class EvalCommand extends OPCommand {
             return channel.send(result.toUTCString());
         }
 
-        if (result instanceof MessageEmbed) {
+        if (result instanceof EmbedBuilder) {
             return channel.send({
                 embeds: [result]
             });

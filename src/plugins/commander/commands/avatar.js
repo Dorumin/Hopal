@@ -1,4 +1,4 @@
-const { MessageAttachment, MessageEmbed } = require('discord.js');
+const { MessageAttachment, EmbedBuilder } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const Command = require('../structs/Command.js');
 
@@ -69,7 +69,7 @@ class AvatarCommand extends Command {
         } catch(e) {
             await message.channel.send({
                 embeds: [
-                    new MessageEmbed()
+                    new EmbedBuilder()
                         .setTitle(`${nick}'s avatar`)
                         .setImage(this.getAvatarURL(user))
                 ]

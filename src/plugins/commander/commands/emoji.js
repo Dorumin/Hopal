@@ -1,4 +1,4 @@
-const { MessageEmbed } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 const Command = require('../structs/Command.js');
 const FormatterPlugin = require('../../fmt');
 
@@ -52,7 +52,7 @@ class EmojiCommand extends Command {
 
         await message.channel.send({
             embeds: [
-                new MessageEmbed()
+                new EmbedBuilder()
                     .setTitle(`Emoji link: ${name}`)
                     .setURL(`https://cdn.discordapp.com/emojis/${id}.${ext}`)
                     .setImage(`https://cdn.discordapp.com/emojis/${id}.${ext}`)

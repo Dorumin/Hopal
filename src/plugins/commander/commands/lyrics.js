@@ -3,7 +3,7 @@ const cheerio = require('cheerio');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const Command = require('../structs/Command.js');
 const FormatterPlugin = require('../../fmt');
-const { MessageEmbed } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 
 class LyricsCommand extends Command {
     static get deps() {
@@ -103,7 +103,7 @@ class LyricsCommand extends Command {
             const first = i === 0;
             const last = i === chunked.length - 1;
 
-            const embed = new MessageEmbed()
+            const embed = new EmbedBuilder()
                 .setURL(data.url)
                 .setDescription(chunked[i].join('\n'));
 
@@ -122,7 +122,10 @@ class LyricsCommand extends Command {
                     size: 32
                 });
 
-                embed.setFooter(`Just for you, ${name}`, avatar);
+                embed.setFooter({
+                    text: `Just for you, ${name}`,
+                    iconURL: avatar
+                });
             }
 
             await message.channel.send({

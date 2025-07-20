@@ -1,4 +1,4 @@
-const { MessageEmbed } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 const Plugin = require('../../structs/Plugin.js');
 const SQLPlugin = require('../sql');
 
@@ -189,7 +189,7 @@ class Starboard {
 
     buildStarEmbed(message, reaction) {
         const props = this.getMessageProps(message);
-        const embed = new MessageEmbed()
+        const embed = new EmbedBuilder()
             .setAuthor(message.member?.nickname ?? message.author.username,
                 message.author.avatarURL({
                     dynamic: false,
@@ -200,7 +200,9 @@ class Starboard {
             .setURL(message.url)
             .setDescription(props.content)
             .setImage(props.image)
-            .setFooter(`${reaction.count} ${this.getStarsEmoji(reaction.count)} | ${this.stringifyChannel(message.channel)}`)
+            .setFooter({
+                text: `${reaction.count} ${this.getStarsEmoji(reaction.count)} | ${this.stringifyChannel(message.channel)}`
+            })
             .setTimestamp(message.timestamp);
 
         return embed;

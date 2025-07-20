@@ -1,4 +1,4 @@
-const { MessageEmbed, MessageAttachment, SnowflakeUtil } = require('discord.js');
+const { EmbedBuilder, MessageAttachment, SnowflakeUtil } = require('discord.js');
 const Plugin = require('../../structs/Plugin');
 const FormatterPlugin = require('../fmt');
 
@@ -84,10 +84,10 @@ class GuildLogger {
 
             await channel.send({
                 embeds: [
-                    new MessageEmbed()
+                    new EmbedBuilder()
                         .setDescription(description)
                         .setImage(emoji.url)
-                        .setFooter('Emoji create')
+                        .setFooter({ text: 'Emoji create' })
                         .setTimestamp()
                 ]
             });
@@ -101,7 +101,7 @@ class GuildLogger {
         if (changedIcon) {
             this.onGuildIconChange(oldGuild, newGuild);
         }
-        
+
         if (changedName) {
             this.onGuildNameChange(oldGuild, newGuild);
         }
@@ -124,7 +124,7 @@ class GuildLogger {
                 // and it will live on in the footer
                 // The new icon is uploaded directly
                 embeds: [
-                    new MessageEmbed()
+                    new EmbedBuilder()
                         .setDescription('The guild icon was changed')
                         .setImage(
                             oldGuild.iconURL({
@@ -133,13 +133,14 @@ class GuildLogger {
                                 size: 2048
                             })
                         )
-                        .setFooter('Guild icon change',
-                            oldGuild.iconURL({
+                        .setFooter({
+                            text: 'Guild icon change',
+                            iconURL: oldGuild.iconURL({
                                 format: 'png',
                                 dynamic: true,
                                 size: 2048
                             })
-                        )
+                        })
                         .setTimestamp()
                 ]
             });
@@ -173,17 +174,18 @@ class GuildLogger {
 
             await channel.send({
                 embeds: [
-                    new MessageEmbed()
+                    new EmbedBuilder()
                         .setTitle(`Guild name was updated`)
                         .addField('Old name', oldGuild.name, true)
                         .addField('New name', newGuild.name, true)
-                        .setFooter('Guild name change',
-                            message.guild.iconURL({
+                        .setFooter({
+                            text: 'Guild name change',
+                            iconURL: message.guild.iconURL({
                                 format: 'png',
                                 dynamic: true,
                                 size: 32
                             })
-                        )
+                        })
                         .setTimestamp()
                 ]
             });
@@ -209,7 +211,7 @@ class GuildLogger {
                 // Not that necessary
                 // It's not that necessary but I want it
                 const extra = '\n\nNow it\'s:\n' + newMessage.content;
-                
+
                 if ((description + extra).length <= 2048) {
                     description += extra;
                 }
@@ -217,11 +219,14 @@ class GuildLogger {
 
             await channel.send({
                 embeds: [
-                    new MessageEmbed()
+                    new EmbedBuilder()
                         .setTitle('Message link')
                         .setURL(newMessage.url)
                         .setDescription(description)
-                        .setFooter('Message edit', newMessage.author.avatarURL())
+                        .setFooter({
+                            text: 'Message edit',
+                            iconURL: newMessage.author.avatarURL()
+                        })
                         .setTimestamp()
                 ]
             });
@@ -278,11 +283,14 @@ class GuildLogger {
 
             await channel.send({
                 embeds: [
-                    new MessageEmbed()
+                    new EmbedBuilder()
                         .setTitle('Message link')
                         .setURL(message.url)
                         .setDescription(description)
-                        .setFooter('Message delete', message.author.avatarURL())
+                        .setFooter({
+                            text: 'Message delete',
+                            iconURL: message.author.avatarURL()
+                        })
                         .setTimestamp()
                 ]
             });
@@ -341,9 +349,12 @@ class GuildLogger {
             if (channel && voiceChannel && member) {
                 await channel.send({
                     embeds: [
-                        new MessageEmbed()
+                        new EmbedBuilder()
                             .setDescription(`<@${userId}> joined the voice channel ${this.bot.fmt.bold(voiceChannel.name)}`)
-                            .setFooter('Voice join', member.user.avatarURL())
+                            .setFooter({
+                                text: 'Voice join',
+                                iconURL: member.user.avatarURL()
+                            })
                             .setTimestamp()
                     ]
                 });
@@ -369,9 +380,12 @@ class GuildLogger {
             if (channel && voiceChannel && member) {
                 await channel.send({
                     embeds: [
-                        new MessageEmbed()
+                        new EmbedBuilder()
                             .setDescription(`<@${userId}> left the voice channel ${this.bot.fmt.bold(voiceChannel.name)}`)
-                            .setFooter('Voice leave', member.user.avatarURL())
+                            .setFooter({
+                                text: 'Voice leave',
+                                iconURL: member.user.avatarURL()
+                            })
                             .setTimestamp()
                     ]
                 });
@@ -397,9 +411,12 @@ class GuildLogger {
             if (channel && voiceChannel && member) {
                 await channel.send({
                     embeds: [
-                        new MessageEmbed()
+                        new EmbedBuilder()
                             .setDescription(`<@${userId}> started streaming in ${this.bot.fmt.bold(voiceChannel.name)}`)
-                            .setFooter('Stream start', member.user.avatarURL())
+                            .setFooter({
+                                text: 'Stream start',
+                                iconURL: member.user.avatarURL()
+                            })
                             .setTimestamp()
                     ]
                 });
@@ -425,9 +442,12 @@ class GuildLogger {
             if (channel && voiceChannel && member) {
                 await channel.send({
                     embeds: [
-                        new MessageEmbed()
+                        new EmbedBuilder()
                             .setDescription(`<@${userId}> stopped streaming in ${this.bot.fmt.bold(voiceChannel.name)}`)
-                            .setFooter('Stream end', member.user.avatarURL())
+                            .setFooter({
+                                text: 'Stream end',
+                                iconURL: member.user.avatarURL()
+                            })
                             .setTimestamp()
                     ]
                 });
@@ -490,17 +510,18 @@ class GuildLogger {
 
             await channel.send({
                 embeds: [
-                    new MessageEmbed()
+                    new EmbedBuilder()
                         .setDescription(description)
                         .addField('Old nickname', oldMember.nickname || '*<none>*', true)
                         .addField('New nickname', newMember.nickname || '*<none>*', true)
-                        .setFooter('Nickname change',
-                            newMember.user.avatarURL({
+                        .setFooter({
+                            text: 'Nickname change',
+                            iconURL: newMember.user.avatarURL({
                                 format: 'png',
                                 dynamic: true,
                                 size: 32
                             })
-                        )
+                        })
                         .setTimestamp()
                 ]
             });
@@ -518,17 +539,18 @@ class GuildLogger {
 
             await channel.send({
                 embeds: [
-                    new MessageEmbed()
+                    new EmbedBuilder()
                         .setDescription(`<@${newMember.user.id}>'s username was changed`)
                         .addField('Old username', oldMember.user.tag, true)
                         .addField('New username', newMember.user.tag, true)
-                        .setFooter('Username change',
-                            newMember.user.avatarURL({
+                        .setFooter({
+                            text: 'Username change',
+                            iconURL: newMember.user.avatarURL({
                                 format: 'png',
                                 dynamic: true,
                                 size: 32
                             })
-                        )
+                        })
                         .setTimestamp()
                 ]
             });
@@ -563,15 +585,16 @@ class GuildLogger {
                 }
             } catch(e) {}
 
-            const embed = new MessageEmbed()
+            const embed = new EmbedBuilder()
                 .setDescription(description)
-                .setFooter('Roles update',
-                    member.user.avatarURL({
+                .setFooter({
+                    text: 'Roles update',
+                    iconURL: member.user.avatarURL({
                         format: 'png',
                         dynamic: true,
                         size: 32
                     })
-                )
+                })
                 .setTimestamp();
 
             const added = updatedRoles.filter(role => member.roles.cache.has(role.id));
@@ -594,7 +617,7 @@ class GuildLogger {
     onPresenceUpdate(oldPresence, newPresence) {
         if (newPresence.status === 'offline') return;
         if (newPresence.user?.bot) return;
-        
+
         const oldStatus = this.getPresenceStatus(oldPresence);
         const newStatus = this.getPresenceStatus(newPresence);
         const statusChanged = oldStatus !== newStatus;
@@ -628,17 +651,18 @@ class GuildLogger {
 
             await channel.send({
                 embeds: [
-                    new MessageEmbed()
+                    new EmbedBuilder()
                         .setDescription(`<@${newMember.user.id}>'s status was changed`)
                         .addField('Old status', oldStatus ?? '*<none>*', true)
                         .addField('New status', newStatus ?? '*<none>*', true)
-                        .setFooter('Status change',
-                            newMember.user.avatarURL({
+                        .setFooter({
+                            text: 'Status change',
+                            iconURL: newMember.user.avatarURL({
                                 format: 'png',
                                 dynamic: true,
                                 size: 32
                             })
-                        )
+                        })
                         .setTimestamp()
                 ]
             });

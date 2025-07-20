@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const { Client, Intents } = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
 const config = require('./util/config.js');
+const { Partials } = require('discord.js');
 
 class Hopal {
     constructor()  {
@@ -11,29 +12,21 @@ class Hopal {
                 repliedUser: false
             },
             intents: [
-                // We might want to listen for new threads
-                Intents.FLAGS.GUILDS,
-                // Join/leave events
-                Intents.FLAGS.GUILD_MEMBERS,
-                // In case we want to assign roles when users join or leave VC
-                Intents.FLAGS.GUILD_VOICE_STATES,
-                // Commands and moderation
-                Intents.FLAGS.GUILD_MESSAGES,
-                // Listening for reactions as commands
-                Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-                // Listening for commands in DM
-                Intents.FLAGS.DIRECT_MESSAGES,
-                // Reactions on commands like !help
-                Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
-                // For reading command actor presences as a source of input
-                Intents.FLAGS.GUILD_PRESENCES,
-                // Extra optional intents
-                config.HOPAL.INTENTS || []
+                GatewayIntentBits.Guilds,
+                GatewayIntentBits.GuildMembers,
+                GatewayIntentBits.GuildVoiceStates,
+                GatewayIntentBits.GuildMessages,
+                GatewayIntentBits.GuildMessageReactions,
+                GatewayIntentBits.DirectMessages,
+                GatewayIntentBits.DirectMessageReactions,
+                GatewayIntentBits.GuildPresences,
+                GatewayIntentBits.MessageContent,
+                ...(config.HOPAL.INTENTS || [])
             ],
             partials: [
-                'CHANNEL',
-                'REACTION',
-                'MESSAGE'
+                Partials.Channel,
+                Partials.Reaction,
+                Partials.Message
             ]
         });
         this.config = config.HOPAL;

@@ -2,7 +2,7 @@ const Plugin = require('../../structs/Plugin');
 
 const got = require('got');
 const { parse } = require('node-html-parser');
-const { MessageEmbed } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 
 class DesuRelayPlugin extends Plugin {
     load() {
@@ -194,7 +194,7 @@ class Relay {
 
         await channel.send({
             embeds: [
-                new MessageEmbed()
+                new EmbedBuilder()
                     .setTitle(postData.filename)
                     .setURL(postData.url)
                     // .setTitle(postData.author)

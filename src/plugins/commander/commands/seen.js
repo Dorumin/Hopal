@@ -73,13 +73,13 @@ class SeenCommand extends OPCommand {
                 return `Looks like that user is on right now. Why not go and ask?`
             case 'true-false-true':
             case 'true-true-true':
-                return `Looks like that user is on right now.\nThe last time I saw it do something was ${this.formatElapsed(times.lastAction)}`;
+                return `Looks like that user is on right now.\nThe last time I saw it do something was ${fa}`;
             case 'false-false-true':
-                return `The last time I saw that user do something was on ${this.formatElapsed(times.lastAction)}`;
+                return `The last time I saw that user do something was on ${fa}`;
             case 'false-true-false':
-                return `The last time I saw them online was ${this.formatElapsed(times.lastOnline)}`;
+                return `The last time I saw them online was ${fo}`;
             case 'false-true-true':
-                return `The last time I saw them online was ${this.formatElapsed(times.lastOnline)}\nAlso, the last time I saw them do something was ${this.formatElapsed(times.lastAction)}`;
+                return `The last time I saw them online was ${fo}\nAlso, the last time I saw them do something was ${fa}`;
             default:
                 return `The orb.`
         }
