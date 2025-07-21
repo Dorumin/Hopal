@@ -93,9 +93,9 @@ class FileInteractions {
                     };
                 }
 
-                if (embed.url.includes('://vxtwitter.com')) {
+                if (embed.url.includes('://vxtwitter.com') || embed.url.includes('://fxtwitter.com')) {
                     let ty = 'image';
-                    if (embed.footer.text.includes('GIF')) {
+                    if (embed.footer?.text.includes('GIF')) {
                         ty = 'gif';
                     } else if (embed.video && embed.video.url) {
                         ty = 'video';

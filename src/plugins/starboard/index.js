@@ -199,7 +199,7 @@ class Starboard {
             })
             .setTitle('Jump to message')
             .setURL(message.url)
-            .setDescription(props.content)
+            .setDescription(props.content || null) // Discord.js is DUMB and it can't FIGURE OUT THAT AN EMPTY STRING SHOULD JUST BE EMPTY
             .setImage(props.image)
             .setFooter({
                 text: `${reaction.count} ${this.getStarsEmoji(reaction.count)} | ${this.stringifyChannel(message.channel)}`
