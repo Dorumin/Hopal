@@ -145,7 +145,7 @@ class Hopal {
             try {
                 return listener.apply(context, arguments);
             } catch (error) {
-                return this.bot.reportError('Listener error:', error);
+                return this.reportError('Listener error:', error);
             }
         }.bind(this);
     }
