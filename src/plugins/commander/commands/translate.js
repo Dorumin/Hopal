@@ -1,7 +1,7 @@
 const got = require('got');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const Command = require('../structs/Command.js');
-const { Util } = require('discord.js');
+const { Util, ActivityType } = require('discord.js');
 
 class TranslateCommand extends Command {
     constructor(bot) {
@@ -66,7 +66,6 @@ class TranslateCommand extends Command {
                 stillNothing = false;
             } else if (
                 referenced.embeds.length !== 0 &&
-                referenced.embeds[0].type === 'rich' &&
                 referenced.embeds[0].description
             ) {
                 text = referenced.embeds[0].description;
@@ -105,7 +104,7 @@ class TranslateCommand extends Command {
 
     getStatus(user) {
         const status = user.presence.activities
-            .find(activity => activity.type === 'CUSTOM_STATUS');
+            .find(activity => activity.type === ActivityType.Custom);
 
         if (status) {
             return status.state;

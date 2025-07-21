@@ -1,5 +1,5 @@
 const Collection = require('../../../structs/Collection');
-const { MessageMentions } = require('discord.js');
+const { MessageMentions, ApplicationCommandOptionType, CommandInteractionOptionResolver } = require('discord.js');
 
 // Copy the useful ones from https://discord.js.org/#/docs/main/stable/class/CommandInteraction if you need
 const INTERACTION_REFLECT_KEYS = [
@@ -19,21 +19,26 @@ const INTERACTION_REFLECT_KEYS = [
 ];
 
 class InteractionCompatibilityLayer {
+    /**
+     *
+     * @param {CommandInteractionOptionResolver['data'][number]} option
+     * @returns
+     */
     static stringifyOption(option) {
         if (option.value == null && !option.options) {
             return '';
         }
 
         switch (option.type) {
-            case 'SUB_COMMAND':
+            case ApplicationCommandOptionType.Subcommand:
                 return option.name + ' ' + InteractionCompatibilityLayer.stringifyOptions(option.options);
-            case 'USER':
+            case ApplicationCommandOptionType.User:
                 return `<@${option.value}>`;
-            case 'CHANNEL':
+            case ApplicationCommandOptionType.Channel:
                 return `<#${option.value}>`;
-            case 'ROLE':
+            case ApplicationCommandOptionType.Role:
                 return `<@&${option.value}>`;
-            case 'MENTIONABLE':
+            case ApplicationCommandOptionType.Mentionable:
                 if (option.user || option.member) {
                     return `<@${option.value}>`;
                 } else if (option.channel) {
@@ -42,7 +47,7 @@ class InteractionCompatibilityLayer {
                     return `<@&${option.value}>`;
                 }
             default:
-                return option.value.toString();
+                return String(option.value);
         }
     }
 

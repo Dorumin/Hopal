@@ -3,7 +3,7 @@ const cheerio = require('cheerio');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const Command = require('../structs/Command.js');
 const FormatterPlugin = require('../../fmt');
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ActivityType } = require('discord.js');
 
 class LyricsCommand extends Command {
     static get deps() {
@@ -68,7 +68,7 @@ class LyricsCommand extends Command {
             const presence = target.presence.activities;
             const spotify = presence.find(activity =>
                 activity.name === 'Spotify' &&
-                activity.type === 'LISTENING'
+                activity.type === ActivityType.Listening
             );
 
             if (!spotify) {

@@ -3,6 +3,7 @@ const path = require('path');
 const Plugin = require('../../structs/Plugin.js');
 const Cache = require('../../structs/Cache.js');
 const FormatterPlugin = require('../fmt');
+const { ChannelType } = require('discord-api-types/v9');
 
 class LoggerPlugin extends Plugin {
     static get deps() {
@@ -37,9 +38,9 @@ class Logger {
 		// if (message.author.bot && message.author.id !== this.bot.client.user.id) return;
 		if (this.config.CHANNEL && message.channel.id === this.config.CHANNEL) return;
 
-        const place = message.channel.type === 'DM'
+        const place = message.channel.type === ChannelType.DM
             ? 'DMs'
-            : `${message.guild.name}#${message.channel.name}`;
+            : `${message.guild?.name}#${message.channel?.name}`;
 
         let entry = `${message.author.username}`;
 

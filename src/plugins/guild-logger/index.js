@@ -1,6 +1,7 @@
 const { EmbedBuilder, MessageAttachment, SnowflakeUtil } = require('discord.js');
 const Plugin = require('../../structs/Plugin');
 const FormatterPlugin = require('../fmt');
+const { ActivityType } = require('discord-api-types/v9');
 
 class GuildLoggerPlugin extends Plugin {
     static get deps() {
@@ -630,7 +631,7 @@ class GuildLogger {
     getPresenceStatus(presence) {
         const status = presence?.activities.find(activity =>
             activity.name === 'Custom Status' &&
-            activity.type === 'CUSTOM'
+            activity.type === ActivityType.Custom
         );
 
         return status?.state;
