@@ -227,7 +227,13 @@ class FileInteractions {
                 '-i', filePath,
                 '-i', palettePath,
                 // I hope separately computing the palette doesn't hammer the memory
-                '-filter_complex', '[0:v][1:v]paletteuse',
+                // Disable paletteuse's dithering, which is sierra2_4a by default,
+                // because 'none' is presumably much easier to compute and because it looks better for gif content
+                // (mostly animation). sierra2_4a is just terrible in general. Best is likely sierra3 or burkes
+                // https://ffmpeg.org/ffmpeg-filters.html#paletteuse
+                //
+                // Note: I haven't tested speed or memory usage of any of these, I'm just assuming none is best
+                '-filter_complex', '[0:v][1:v]paletteuse=dither=none',
                 // Easier on the memory usage and cpu contention
                 '-threads', '1',
                 // Loop infinitely
