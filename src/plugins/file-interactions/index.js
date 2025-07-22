@@ -149,17 +149,14 @@ class FileInteractions {
             });
         } else {
             try {
-                // Can't make a follow-up ephemeral. Sad
+                // Can't make a follow-up conditionally ephemeral (for the error case). Sad
                 await interaction.deferReply();
 
-                const filePath = await this.download(source);
+                const filePaths = await this.download(source);
 
                 await interaction.followUp({
                     content: `<${source.url}>`,
-                    files: [
-                        new AttachmentBuilder(filePath)
-                    ]
-                    // flags: MessageFlags.Ephemeral
+                    files: filePaths.map(filePath => new AttachmentBuilder(filePath))
                 });
 
                 try {
@@ -169,7 +166,6 @@ class FileInteractions {
                 console.error('download error', e);
                 await interaction.followUp({
                     content: `Something fucked up while downloading (and I'm not telling you what)`,
-                    // flags: MessageFlags.Ephemeral
                 });
             }
         }
@@ -186,27 +182,41 @@ class FileInteractions {
             source.url
         ]);
 
-        const filePath = ytdl.stdout.trim();
+        const filePaths = ytdl.stdout.trim().split('\n').map(line => line.trim());
 
-        console.log('downloaded file path', filePath);
+        console.log('downloaded files', filePaths);
 
         if (source.ty === 'gif') {
             // TODO: Make a decent abstraction to try multiple steps in a row
             // For palettegen, then without if oom, then just upload video
-            const gifPath = await this.convertGifGlobalPalette(filePath);
+            const gifPaths = await this.allShortCircuiting(filePaths, this.convertGifGlobalPalette.bind(this));
 
-            if (gifPath) {
-                return gifPath;
+            if (gifPaths) {
+                return gifPaths;
             }
 
-            const shittyPath = await this.convertGifShitty(filePath);
+            const shittyPaths = await this.allShortCircuiting(filePaths, this.convertGifShitty.bind(this));
 
-            if (shittyPath) {
-                return shittyPath;
+            if (shittyPaths) {
+                return shittyPaths;
             }
         }
 
-        return filePath;
+        return filePaths;
+    }
+
+    async allShortCircuiting(filePaths, mapper) {
+        const results = [];
+
+        for (const filePath of filePaths) {
+            const result = await mapper(filePath);
+
+            if (result === null) return null;
+
+            results.push(result);
+        }
+
+        return results;
     }
 
     async convertGifGlobalPalette(filePath) {
@@ -229,7 +239,9 @@ class FileInteractions {
                 // I hope separately computing the palette doesn't hammer the memory
                 // Disable paletteuse's dithering, which is sierra2_4a by default,
                 // because 'none' is presumably much easier to compute and because it looks better for gif content
-                // (mostly animation). sierra2_4a is just terrible in general. Best is likely sierra3 or burkes
+                // (mostly animation).
+                // sierra2_4a and bayer are the best for content that really suffers from banding, the others
+                // can show some more obvious banding but don't suffer from the former's butchering of animation
                 // https://ffmpeg.org/ffmpeg-filters.html#paletteuse
                 //
                 // Note: I haven't tested speed or memory usage of any of these, I'm just assuming none is best
