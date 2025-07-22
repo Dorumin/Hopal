@@ -218,8 +218,7 @@ class FileInteractions {
         try {
             await this.spawn('ffmepg', [
                 '-i', 'input.mp4',
-                // I'm uncertain of the importance of fps in this step
-                '-vf', 'flags=lanczos,palettegen',
+                '-vf', 'palettegen',
                 palettePath
             ]);
             _palettePath = palettePath;
@@ -276,7 +275,7 @@ class FileInteractions {
 
             await fs.rm(filePath);
 
-            return newPath;
+            return gifPath;
         } catch(e) {
             console.log('failure when shitty encoding gif - oom likely', e);
 
