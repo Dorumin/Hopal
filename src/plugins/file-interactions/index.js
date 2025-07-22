@@ -150,7 +150,7 @@ class FileInteractions {
         } else {
             try {
                 // Can't make a follow-up ephemeral. Sad
-                // await interaction.deferReply();
+                await interaction.deferReply();
 
                 const filePath = await this.download(source);
 
