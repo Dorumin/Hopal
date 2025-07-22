@@ -299,7 +299,6 @@ class FileInteractions {
 
             await Promise.allSettled([
                 // Awaiting undefined values is fine
-                _palettePath && fs.rm(_palettePath),
                 _gifPath && fs.rm(_gifPath),
             ]);
 
