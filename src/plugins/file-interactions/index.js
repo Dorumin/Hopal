@@ -155,6 +155,7 @@ class FileInteractions {
                 const filePath = await this.download(source);
 
                 await interaction.followUp({
+                    content: `<${source.url}>`,
                     files: [
                         new AttachmentBuilder(filePath)
                     ]
