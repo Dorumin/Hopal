@@ -188,46 +188,114 @@ class FileInteractions {
 
         const filePath = ytdl.stdout.trim();
 
-        console.log('download file path', filePath);
+        console.log('downloaded file path', filePath);
 
         if (source.ty === 'gif') {
-            const newPath = path.join(path.dirname(filePath), `${path.basename(filePath)}.gif`);
-
             // TODO: Make a decent abstraction to try multiple steps in a row
             // For palettegen, then without if oom, then just upload video
-            try {
-                await this.spawn('ffmpeg', [
-                    '-i', filePath,
-                    // 50fps because gif can only go in increments of centiseconds
-                    // Palette gen works well but needs heaps of memory
-                    // '-vf', `fps=50,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,
-                    '-vf', `fps=50`,
-                    // Easier on the memory usage and cpu contention
-                    '-threads', '1',
-                    // Loop infinitely
-                    '-loop', '0',
-                    // Just in case
-                    '-y',
-                    newPath
-                ]);
+            const gifPath = await this.convertGifGlobalPalette(filePath);
 
-                await fs.rm(filePath);
+            if (gifPath) {
+                return gifPath;
+            }
 
-                return newPath;
-            } catch(e) {
-                // Converting to gif failed - fall through and return original (undeleted) file
-                console.log('ffmpeg failure - oom likely', e);
+            const shittyPath = await this.convertGifShitty(filePath);
+
+            if (shittyPath) {
+                return shittyPath;
             }
         }
 
         return filePath;
     }
 
-    spawn(exe, args) {
+    async convertGifGlobalPalette(filePath) {
+        const gifPath = path.join(path.dirname(filePath), `${path.basename(filePath)}.gif`);
+        const palettePath = path.join(path.dirname(filePath), `${path.basename(filePath)}.palette.png`);
+        let _gifPath;
+        let _palettePath;
+
+        try {
+            await this.spawn('ffmepg', [
+                '-i', 'input.mp4',
+                // I'm uncertain of the importance of fps in this step
+                '-vf', 'flags=lanczos,palettegen',
+                palettePath
+            ]);
+            _palettePath = palettePath;
+
+            await this.spawn('ffmpeg', [
+                '-i', filePath,
+                '-i', palettePath,
+                // I hope separately computing the palette doesn't hammer the memory
+                '-vf', '[0:v][1:v]paletteuse',
+                // Easier on the memory usage and cpu contention
+                '-threads', '1',
+                // Loop infinitely
+                '-loop', '0',
+                // Just in case
+                '-y',
+                gifPath
+            ]);
+            _gifPath = gifPath;
+
+            await fs.rm(filePath);
+
+            return gifPath;
+        } catch(e) {
+            console.log('failure when fancy encoding gif - oom likely', e);
+
+            await Promise.allSettled([
+                // Awaiting undefined values is fine
+                _palettePath && fs.rm(_palettePath),
+                _gifPath && fs.rm(_gifPath),
+            ]);
+
+            return null;
+        }
+    }
+
+    async convertGifShitty(filePath) {
+        const gifPath = path.join(path.dirname(filePath), `${path.basename(filePath)}.gif`);
+        let _gifPath;
+
+        try {
+            await this.spawn('ffmpeg', [
+                '-i', filePath,
+                // Palette gen works well but needs heaps of memory
+                // '-vf', `fps=50,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`,
+                // Easier on the memory usage and cpu contention
+                '-threads', '1',
+                // Loop infinitely
+                '-loop', '0',
+                // Just in case
+                '-y',
+                gifPath
+            ]);
+            _gifPath = gifPath;
+
+            await fs.rm(filePath);
+
+            return newPath;
+        } catch(e) {
+            console.log('failure when shitty encoding gif - oom likely', e);
+
+            await Promise.allSettled([
+                // Awaiting undefined values is fine
+                _palettePath && fs.rm(_palettePath),
+                _gifPath && fs.rm(_gifPath),
+            ]);
+
+            return null;
+        }
+    }
+
+    spawn(exe, args, spawnOptions = {}) {
         return new Promise((resolve, reject) => {
             const process = child_process.spawn(exe, args, {
-                stdio: ['inherit', 'pipe', 'pipe'],
-                windowsHide: true
+                stdio: ['pipe', 'pipe', 'pipe'],
+                windowsHide: true,
+                ...spawnOptions
             });
 
             // This doesn't seem to do much - I'll just ensure filenames...
@@ -243,6 +311,10 @@ class FileInteractions {
 
             process.stderr.on('data', (data) => {
                 stderr += data.toString();
+            });
+
+            process.on('error', (err) => {
+                reject({ code: 1, stdout, stderr, err });
             });
 
             process.on('close', (code) => {
