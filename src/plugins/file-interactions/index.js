@@ -227,7 +227,7 @@ class FileInteractions {
                 '-i', filePath,
                 '-i', palettePath,
                 // I hope separately computing the palette doesn't hammer the memory
-                '-vf', '[0:v][1:v]paletteuse',
+                '-filter_complex', '[0:v][1:v]paletteuse',
                 // Easier on the memory usage and cpu contention
                 '-threads', '1',
                 // Loop infinitely
