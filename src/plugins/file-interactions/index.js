@@ -73,7 +73,7 @@ class FileInteractions {
      */
     async onReupload(interaction) {
         // Twitter
-        let twitter = null;
+        let source = null;
         if (interaction.targetMessage.embeds.length > 0) {
             const embed = interaction.targetMessage.embeds[0];
 
@@ -86,7 +86,7 @@ class FileInteractions {
                         ty = 'video';
                     }
 
-                    twitter = {
+                    source = {
                         ty,
                         url: embed.url,
                         image: embed.image?.url
@@ -101,7 +101,7 @@ class FileInteractions {
                         ty = 'video';
                     }
 
-                    twitter = {
+                    source = {
                         ty,
                         url: embed.url,
                         image: embed.image?.url
@@ -116,16 +116,24 @@ class FileInteractions {
                         ty = 'video';
                     }
 
-                    twitter = {
+                    source = {
                         ty,
                         url: embed.url.replace('fixupx.com', 'x.com'),
                         image: embed.image?.url
                     };
                 }
+
+                if (embed.url.includes('://tiktok.com') || embed.url.includes('://www.tiktok.com')) {
+                    source = {
+                        ty: 'video',
+                        url: embed.url,
+                        image: null
+                    };
+                }
             }
         }
 
-        if (!twitter) {
+        if (!source) {
             await interaction.reply({
                 content: `I don't know what to do with this (only supports twitter)`,
                 flags: MessageFlags.Ephemeral
@@ -134,17 +142,17 @@ class FileInteractions {
             return;
         }
 
-        if (twitter.ty === 'image') {
+        if (source.ty === 'image') {
             await interaction.reply({
-                content: `The image is at ${twitter.image}, but I won't reupload it because the tweet might have multiple files`,
+                content: `The image is at ${source.image}, but I won't reupload it because the tweet might have multiple files`,
                 flags: MessageFlags.Ephemeral
             });
         } else {
             try {
                 // Can't make a follow-up ephemeral. Sad
-                await interaction.deferReply();
+                // await interaction.deferReply();
 
-                const filePath = await this.download(twitter);
+                const filePath = await this.download(source);
 
                 await interaction.followUp({
                     files: [
@@ -166,24 +174,26 @@ class FileInteractions {
         }
     }
 
-    async download(twitter) {
-        console.log('download', twitter);
+    async download(source) {
+        console.log('download', source);
 
         const ytdl = await this.spawn('yt-dlp', [
             // '-j',
             '--print', 'after_move:filename',
             // Works around dumb file names with utf-8 which fail to pipe
             '-o', '%(id)s.%(ext)s',
-            twitter.url
+            source.url
         ]);
 
         const filePath = ytdl.stdout.trim();
 
-        console.log(filePath);
+        console.log('download file path', filePath);
 
-        if (twitter.ty === 'gif') {
+        if (source.ty === 'gif') {
             const newPath = path.join(path.dirname(filePath), `${path.basename(filePath)}.gif`);
 
+            // TODO: Make a decent abstraction to try multiple steps in a row
+            // For palettegen, then without if oom, then just upload video
             try {
                 await this.spawn('ffmpeg', [
                     '-i', filePath,
