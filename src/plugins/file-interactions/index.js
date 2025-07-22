@@ -103,7 +103,7 @@ class FileInteractions {
 
                     source = {
                         ty,
-                        url: embed.url,
+                        url: embed.url.replace(/[fv]xtwitter\.com/, 'x.com'),
                         image: embed.image?.url
                     };
                 }
