@@ -216,7 +216,7 @@ class FileInteractions {
         let _palettePath;
 
         try {
-            await this.spawn('ffmepg', [
+            await this.spawn('ffmpeg', [
                 '-i', 'input.mp4',
                 '-vf', 'palettegen',
                 palettePath
