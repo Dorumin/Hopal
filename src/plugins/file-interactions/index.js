@@ -1,12 +1,11 @@
 const child_process = require('child_process');
 const fs = require('fs/promises');
 const path = require('path');
-const { Interaction, ApplicationCommandType, ContextMenuCommandBuilder, MessageFlags, EmbedBuilder, MessageContextMenuCommandInteraction } = require('discord.js');
+const { Interaction, ApplicationCommandType, ContextMenuCommandBuilder, MessageFlags, EmbedBuilder, MessageContextMenuCommandInteraction, AttachmentBuilder } = require('discord.js');
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 const Plugin = require('../../structs/Plugin');
 const FormatterPlugin = require('../fmt');
-const { AttachmentBuilder } = require('discord.js');
 
 class FileInteractionsPlugin extends Plugin {
     static get deps() {
@@ -88,7 +87,7 @@ class FileInteractions {
 
                     source = {
                         ty,
-                        url: embed.url,
+                        url: embed.url.replace('://twitter.com', '://x.com'),
                         image: embed.image?.url
                     };
                 }
