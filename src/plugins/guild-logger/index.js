@@ -1,4 +1,4 @@
-const { EmbedBuilder, MessageAttachment, SnowflakeUtil } = require('discord.js');
+const { EmbedBuilder, AttachmentBuilder, SnowflakeUtil } = require('discord.js');
 const Plugin = require('../../structs/Plugin');
 const FormatterPlugin = require('../fmt');
 const { ActivityType } = require('discord-api-types/v9');
@@ -151,13 +151,13 @@ class GuildLogger {
             await channel.send({
                 content: 'New icon:',
                 files: [
-                    new MessageAttachment(
+                    new AttachmentBuilder(
                         newGuild.iconURL({
                             format: 'png',
                             dynamic: true,
                             size: 2048
                         }),
-                        `icon.${newIconAnim ? 'gif' : 'png'}`
+                        { filename: `icon.${newIconAnim ? 'gif' : 'png'}`, description: `${newGuild.name}'s new icon` }
                     )
                 ]
             });

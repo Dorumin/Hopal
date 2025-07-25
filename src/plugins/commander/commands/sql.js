@@ -1,6 +1,6 @@
 const got = require('got');
 const { table, getBorderCharacters } = require('table');
-const { MessageAttachment } = require('discord.js');
+const { AttachmentBuilder } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const OPCommand = require('../structs/OPCommand.js');
 const FormatterPlugin = require('../../fmt');
@@ -174,7 +174,6 @@ class SQLCommand extends OPCommand {
                 this.bot.fmt.codeBlock('apache', `${error}`)
             );
         } else if (result) {
-
             const { columns, rows } = result;
 
             const data = [
@@ -189,9 +188,9 @@ class SQLCommand extends OPCommand {
             if (codeBlock.length > 2000) {
                 return message.channel.send({
                     files: [
-                        new MessageAttachment(
+                        new AttachmentBuilder(
                             Buffer.from(asciiTable, 'utf8'),
-                            'result.txt'
+                            { filename: 'result.txt', description: `SQL query result (${rows.length} results)` }
                         )
                     ]
                 });

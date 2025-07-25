@@ -1,6 +1,6 @@
 const got = require('got');
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageAttachment } = require('discord.js');
+const { AttachmentBuilder } = require('discord.js');
 const Command = require('../structs/Command.js');
 
 class InspirationCommand extends Command {
@@ -21,7 +21,7 @@ class InspirationCommand extends Command {
 
         await message.channel.send({
             files: [
-                new MessageAttachment(url, 'inspiring.jpg')
+                new AttachmentBuilder(url, { filename: 'inspiring.jpg', description: 'Inspirational image' })
             ]
         });
     }

@@ -1,4 +1,4 @@
-const { MessageAttachment } = require('discord.js');
+const { AttachmentBuilder } = require('discord.js');
 const Plugin = require('../../structs/Plugin');
 
 class AvatarTrackerPlugin extends Plugin {
@@ -45,7 +45,7 @@ class AvatarTracker {
         const url = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${ext}?size=2048`;
         const filename = `avatar.${ext}`;
 
-        return new MessageAttachment(url, filename);
+        return new AttachmentBuilder(url, { name: filename, description: `${user.username}'s avatar` });
     }
 
     getExtension(avatarHash) {

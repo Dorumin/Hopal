@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageAttachment } = require('discord.js');
+const { AttachmentBuilder } = require('discord.js');
 const Command = require('../structs/Command.js');
 
 class ReuploadCommand extends Command {
@@ -48,7 +48,7 @@ class ReuploadCommand extends Command {
 
         await channel.send({
             files: [
-                new MessageAttachment(url)
+                new AttachmentBuilder(url)
             ]
         });
 

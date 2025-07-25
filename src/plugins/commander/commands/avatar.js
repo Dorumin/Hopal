@@ -1,4 +1,4 @@
-const { MessageAttachment, EmbedBuilder } = require('discord.js');
+const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const Command = require('../structs/Command.js');
 
@@ -38,7 +38,7 @@ class AvatarCommand extends Command {
         const ext = this.getExtension(avatarHash);
         const url = this.getAvatarURL(user);
 
-        return new MessageAttachment(url, `avatar.${ext}`);
+        return new AttachmentBuilder(url, { filename: `avatar.${ext}`, description: `${user.username}'s avatar` });
     }
 
     async call(message, content) {

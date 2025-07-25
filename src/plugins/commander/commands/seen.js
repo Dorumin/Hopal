@@ -1,6 +1,3 @@
-const got = require('got');
-const { table, getBorderCharacters } = require('table');
-const { MessageAttachment } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const OPCommand = require('../structs/OPCommand.js');
 const SeenPlugin = require('../../seen/index.js');
