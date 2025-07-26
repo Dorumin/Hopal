@@ -88,37 +88,48 @@ class FileInteractions {
                     source = {
                         ty,
                         url: embed.url.replace('://twitter.com', '://x.com'),
-                        image: embed.image?.url
+                        image: embed.image?.url,
+                        fallbacks: []
                     };
                 }
 
                 if (embed.url.includes('://vxtwitter.com') || embed.url.includes('://fxtwitter.com')) {
                     let ty = 'image';
+                    let fallbacks = [];
                     if (embed.footer?.text.includes('GIF')) {
                         ty = 'gif';
+                        if (embed.video && embed.video.url) {
+                            fallbacks.push(embed.video.url);
+                        }
                     } else if (embed.video && embed.video.url) {
                         ty = 'video';
+                        fallbacks.push(embed.video.url);
                     }
 
                     source = {
                         ty,
                         url: embed.url.replace(/[fv]xtwitter\.com/, 'x.com'),
-                        image: embed.image?.url
+                        image: embed.image?.url,
+                        fallbacks
                     };
                 }
 
                 if (embed.url.includes('://fixupx.com')) {
                     let ty = 'image';
+                    const fallbacks = [];
                     if (embed.image && embed.image.url.includes('.gif')) {
                         ty = 'gif';
+                        fallbacks.push(embed.image.url);
                     } else if (embed.video && embed.video.url) {
                         ty = 'video';
+                        fallbacks.push(embed.video.url);
                     }
 
                     source = {
                         ty,
                         url: embed.url.replace('fixupx.com', 'x.com'),
-                        image: embed.image?.url
+                        image: embed.image?.url,
+                        fallbacks
                     };
                 }
 
@@ -173,15 +184,21 @@ class FileInteractions {
     async download(source) {
         console.log('download', source);
 
-        const ytdl = await this.spawn('yt-dlp', [
-            // '-j',
-            '--print', 'after_move:filename',
-            // Works around dumb file names with utf-8 which fail to pipe
-            '-o', '%(id)s.%(ext)s',
-            source.url
-        ]);
+        let filePaths;
+        try {
+            filePaths = await this.ytdl(source.url);
+        } catch(e) {
+            for (const fallback of source.fallbacks) {
+                try {
+                    console.log(`Trying fallback: ${fallback}`);
+                    filePaths = await this.ytdl(fallback);
+                    break;
+                } catch(e) {}
+            }
 
-        const filePaths = ytdl.stdout.trim().split('\n').map(line => line.trim());
+            // No fallback succeeded
+            throw e;
+        }
 
         console.log('downloaded files', filePaths);
 
@@ -200,6 +217,19 @@ class FileInteractions {
                 return shittyPaths;
             }
         }
+
+        return filePaths;
+    }
+
+    async ytdl(url) {
+        const ytdl = await this.spawn('yt-dlp', [
+            // '-j',
+            '--print', 'after_move:filename',
+            // Works around dumb file names with utf-8 which fail to pipe
+            '-o', '%(id)s.%(ext)s',
+            url
+        ]);
+        const filePaths = ytdl.stdout.trim().split('\n').map(line => line.trim());
 
         return filePaths;
     }
