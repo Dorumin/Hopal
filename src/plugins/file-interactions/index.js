@@ -137,7 +137,8 @@ class FileInteractions {
                     source = {
                         ty: 'video',
                         url: embed.url,
-                        image: null
+                        image: null,
+                        fallbacks: []
                     };
                 }
             }
