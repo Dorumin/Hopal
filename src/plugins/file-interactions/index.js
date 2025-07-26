@@ -197,8 +197,10 @@ class FileInteractions {
                 } catch(e) {}
             }
 
-            // No fallback succeeded
-            throw e;
+            if (!filePaths) {
+                // No fallback succeeded
+                throw e;
+            }
         }
 
         console.log('downloaded files', filePaths);
