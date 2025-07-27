@@ -21,6 +21,8 @@ class Hopal {
                 GatewayIntentBits.DirectMessageReactions,
                 GatewayIntentBits.GuildPresences,
                 GatewayIntentBits.MessageContent,
+                GatewayIntentBits.GuildMessageTyping,
+                GatewayIntentBits.DirectMessageTyping,
                 ...(config.HOPAL.INTENTS || [])
             ],
             partials: [

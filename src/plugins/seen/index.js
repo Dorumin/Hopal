@@ -58,7 +58,7 @@ class Seen {
 
         bot.client.on('presenceUpdate', this.onPresenceUpdate.bind(this));
         bot.client.on('typingStart', this.onTypingStart.bind(this));
-        bot.client.on('message', this.onMessage.bind(this));
+        bot.client.on('messageCreate', this.onMessage.bind(this));
     }
 
     async getTimes(userId) {
