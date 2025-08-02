@@ -117,7 +117,7 @@ class FileInteractions {
 
             if (embed.url) {
                 if (/youtu\.be|youtube\.com/.test(embed.url)) {
-                    source = {
+                    return {
                         ty: 'video',
                         url: embed.url,
                         image: null,
