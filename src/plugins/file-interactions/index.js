@@ -71,78 +71,7 @@ class FileInteractions {
      * @param {MessageContextMenuCommandInteraction} interaction
      */
     async onReupload(interaction) {
-        // Twitter
-        let source = null;
-        if (interaction.targetMessage.embeds.length > 0) {
-            const embed = interaction.targetMessage.embeds[0];
-
-            if (embed.url) {
-                if (embed.url.includes('://x.com') || embed.url.includes('://twitter.com') && embed.image) {
-                    let ty = 'image';
-                    if (embed.image && embed.image.url.includes('tweet_video_thumb')) {
-                        ty = 'gif';
-                    } else if (embed.image && embed.image.url.includes('amplify_video_thumb')) {
-                        ty = 'video';
-                    }
-
-                    source = {
-                        ty,
-                        url: embed.url.replace('://twitter.com', '://x.com'),
-                        image: embed.image?.url,
-                        fallbacks: []
-                    };
-                }
-
-                if (embed.url.includes('://vxtwitter.com') || embed.url.includes('://fxtwitter.com')) {
-                    let ty = 'image';
-                    let fallbacks = [];
-                    if (embed.footer?.text.includes('GIF')) {
-                        ty = 'gif';
-                        if (embed.video && embed.video.url) {
-                            fallbacks.push(embed.video.url);
-                        }
-                    } else if (embed.video && embed.video.url) {
-                        ty = 'video';
-                        fallbacks.push(embed.video.url);
-                    }
-
-                    source = {
-                        ty,
-                        url: embed.url.replace(/[fv]xtwitter\.com/, 'x.com'),
-                        image: embed.image?.url,
-                        fallbacks
-                    };
-                }
-
-                if (embed.url.includes('://fixupx.com')) {
-                    let ty = 'image';
-                    const fallbacks = [];
-                    if (embed.image && embed.image.url.includes('.gif')) {
-                        ty = 'gif';
-                        fallbacks.push(embed.image.url);
-                    } else if (embed.video && embed.video.url) {
-                        ty = 'video';
-                        fallbacks.push(embed.video.url);
-                    }
-
-                    source = {
-                        ty,
-                        url: embed.url.replace('fixupx.com', 'x.com'),
-                        image: embed.image?.url,
-                        fallbacks
-                    };
-                }
-
-                if (embed.url.includes('://tiktok.com') || embed.url.includes('://www.tiktok.com')) {
-                    source = {
-                        ty: 'video',
-                        url: embed.url,
-                        image: null,
-                        fallbacks: []
-                    };
-                }
-            }
-        }
+        const source = this.extractSource(interaction);
 
         if (!source) {
             await interaction.reply({
@@ -178,6 +107,88 @@ class FileInteractions {
                 await interaction.followUp({
                     content: `Something fucked up while downloading (and I'm not telling you what)`,
                 });
+            }
+        }
+    }
+
+    extractSource(interaction) {
+        if (interaction.targetMessage.embeds.length > 0) {
+            const embed = interaction.targetMessage.embeds[0];
+
+            if (embed.url) {
+                if (/youtu\.be|youtube\.com/.test(embed.url)) {
+                    source = {
+                        ty: 'video',
+                        url: embed.url,
+                        image: null,
+                        fallbacks: []
+                    };
+                }
+
+                if ((embed.url.includes('://x.com') || embed.url.includes('://twitter.com') || embed.url.includes('://xcancel.com')) && embed.image) {
+                    let ty = 'image';
+                    if (embed.image && embed.image.url.includes('tweet_video_thumb')) {
+                        ty = 'gif';
+                    } else if (embed.image && embed.image.url.includes('amplify_video_thumb')) {
+                        ty = 'video';
+                    }
+
+                    return {
+                        ty,
+                        url: embed.url.replace(/:\/\/(twitter|xcancel).com/, '://x.com'),
+                        image: embed.image?.url,
+                        fallbacks: []
+                    };
+                }
+
+                if (embed.url.includes('://vxtwitter.com') || embed.url.includes('://fxtwitter.com')) {
+                    let ty = 'image';
+                    let fallbacks = [];
+                    if (embed.footer?.text.includes('GIF')) {
+                        ty = 'gif';
+                        if (embed.video && embed.video.url) {
+                            fallbacks.push(embed.video.url);
+                        }
+                    } else if (embed.video && embed.video.url) {
+                        ty = 'video';
+                        fallbacks.push(embed.video.url);
+                    }
+
+                    return {
+                        ty,
+                        url: embed.url.replace(/[fv]xtwitter\.com/, 'x.com'),
+                        image: embed.image?.url,
+                        fallbacks
+                    };
+                }
+
+                if (embed.url.includes('://fixupx.com')) {
+                    let ty = 'image';
+                    const fallbacks = [];
+                    if (embed.image && embed.image.url.includes('.gif')) {
+                        ty = 'gif';
+                        fallbacks.push(embed.image.url);
+                    } else if (embed.video && embed.video.url) {
+                        ty = 'video';
+                        fallbacks.push(embed.video.url);
+                    }
+
+                    return {
+                        ty,
+                        url: embed.url.replace('fixupx.com', 'x.com'),
+                        image: embed.image?.url,
+                        fallbacks
+                    };
+                }
+
+                if (embed.url.includes('://tiktok.com') || embed.url.includes('://www.tiktok.com')) {
+                    return {
+                        ty: 'video',
+                        url: embed.url,
+                        image: null,
+                        fallbacks: []
+                    };
+                }
             }
         }
     }
