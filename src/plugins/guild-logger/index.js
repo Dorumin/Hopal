@@ -157,7 +157,7 @@ class GuildLogger {
                             dynamic: true,
                             size: 2048
                         }),
-                        { filename: `icon.${newIconAnim ? 'gif' : 'png'}`, description: `${newGuild.name}'s new icon` }
+                        { name: `icon.${newIconAnim ? 'gif' : 'png'}`, description: `${newGuild.name}'s new icon` }
                     )
                 ]
             });

@@ -190,7 +190,7 @@ class SQLCommand extends OPCommand {
                     files: [
                         new AttachmentBuilder(
                             Buffer.from(asciiTable, 'utf8'),
-                            { filename: 'result.txt', description: `SQL query result (${rows.length} results)` }
+                            { name: 'result.txt', description: `SQL query result (${rows.length} results)` }
                         )
                     ]
                 });

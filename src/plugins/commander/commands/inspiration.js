@@ -21,7 +21,7 @@ class InspirationCommand extends Command {
 
         await message.channel.send({
             files: [
-                new AttachmentBuilder(url, { filename: 'inspiring.jpg', description: 'Inspirational image' })
+                new AttachmentBuilder(url, { name: 'inspiring.jpg', description: 'Inspirational image' })
             ]
         });
     }

@@ -38,7 +38,7 @@ class AvatarCommand extends Command {
         const ext = this.getExtension(avatarHash);
         const url = this.getAvatarURL(user);
 
-        return new AttachmentBuilder(url, { filename: `avatar.${ext}`, description: `${user.username}'s avatar` });
+        return new AttachmentBuilder(url, { name: `avatar.${ext}`, description: `${user.username}'s avatar` });
     }
 
     async call(message, content) {
