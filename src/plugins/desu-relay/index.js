@@ -192,7 +192,7 @@ class Relay {
 
         console.log('sending', postData.image);
 
-        await channel.send({
+        const message = await channel.send({
             embeds: [
                 new EmbedBuilder()
                     .setTitle(postData.filename)
@@ -206,6 +206,23 @@ class Relay {
                     // .setTimestamp(postData.timestamp)
             ]
         });
+
+        if (!postData.filename.endsWidth('.webm') && !postData.filename.endsWith('.mp4')) {
+            (async () => {
+                const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+                let msg = message;
+
+                for (let i = 0; i < 5; i++) {
+                    await sleep(1000 * 60 * 5);
+
+                    const isEmpty = msg.embeds[0]?.image?.width === 0 && msg.embeds[0]?.image?.height === 0;
+
+                    if (!isEmpty) break;
+
+                    msg = await msg.edit({ content: ' ' });
+                }
+            })();
+        }
     }
 
     getSearchString() {
