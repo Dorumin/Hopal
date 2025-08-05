@@ -215,7 +215,7 @@ class Relay {
                 for (let i = 0; i < 5; i++) {
                     await sleep(1000 * 60 * 5);
 
-                    const isEmpty = msg.embeds[0]?.image?.width === 0 && msg.embeds[0]?.image?.height === 0;
+                    const isEmpty = msg.embeds[0]?.data?.image?.width === 0 && msg.embeds[0]?.data?.image?.height === 0;
 
                     if (!isEmpty) break;
 
