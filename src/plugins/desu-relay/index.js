@@ -207,7 +207,7 @@ class Relay {
             ]
         });
 
-        if (!postData.filename.endsWidth('.webm') && !postData.filename.endsWith('.mp4')) {
+        if (!postData.filename.endsWith('.webm') && !postData.filename.endsWith('.mp4')) {
             (async () => {
                 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
                 let msg = message;
@@ -221,7 +221,7 @@ class Relay {
 
                     msg = await msg.edit({ content: ' ' });
                 }
-            })();
+            })().catch(console.error);
         }
     }
 
