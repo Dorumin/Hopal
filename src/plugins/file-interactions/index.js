@@ -144,7 +144,7 @@ class FileInteractions {
                 if (embed.url.includes('://vxtwitter.com') || embed.url.includes('://fxtwitter.com')) {
                     let ty = 'image';
                     let fallbacks = [];
-                    if (embed.footer?.text.includes('GIF')) {
+                    if (embed.footer?.text.includes('GIF') || embed.image?.url.includes('.gif')) {
                         ty = 'gif';
                         if (embed.video && embed.video.url) {
                             fallbacks.push(embed.video.url);
