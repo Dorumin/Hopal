@@ -40,6 +40,42 @@ class DesuRelay {
     }
 }
 
+class Filter {
+    constructor(filter) {
+        if (new.target === Filter) throw new Error('abstract');
+
+        this.type = filter.TYPE;
+        this.disabled = filter.ENABLED === false;
+    }
+
+    static build(filter) {
+        switch (filter.TYPE) {
+            case 'not-regex-match':
+                return new NotRegexFilter(filter);
+        }
+
+        throw new Error('unknown');
+    }
+
+    accepts(_postData) {
+        throw new Error('unimplemented');
+    }
+}
+
+class NotRegexFilter extends Filter {
+    constructor(filter) {
+        super(filter);
+
+        this.regex = new RegExp(filter.REGEX, filter.FLAGS ?? '');
+        this.field = filter.FIELD;
+    }
+
+    accepts(postData) {
+        if (this.disabled) return true;
+
+        return !this.regex.test(postData[this.field]);
+    }
+}
 
 class Relay {
     constructor(relay, desu) {
@@ -47,6 +83,7 @@ class Relay {
         this.channelId = relay.CHANNEL_ID;
         this.searchQuery = relay.SEARCH;
         this.disabled = relay.ENABLED === false;
+        this.filters = (relay.FILTERS ?? []).map(filter => Filter.build(filter));
 
         this.lastThread = null;
         this.lastPost = null;
@@ -182,6 +219,12 @@ class Relay {
 
         if (pastLinks.includes(postData.image)) {
             console.log('Ignoring duplicate', postData.image);
+
+            return;
+        }
+
+        if (this.filters.some(filter => !filter.accepts(postData))) {
+            console.log('Rejected by custom filter', postData);
 
             return;
         }
