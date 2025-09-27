@@ -1,7 +1,7 @@
 const got = require('got');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const Command = require('../structs/Command.js');
-const { Util, ActivityType } = require('discord.js');
+const { ActivityType } = require('discord.js');
 
 class TranslateCommand extends Command {
     constructor(bot) {
@@ -82,9 +82,7 @@ class TranslateCommand extends Command {
 
         if (stillNothing) {
             // Replace any possible mentions with their cleaned up @text form
-            text = this.extractData(
-                Util.cleanContent(content, message)
-            ).text;
+            text = this.extractData(content).text;
         }
 
         const translation = await this.getTranslation({
