@@ -129,7 +129,7 @@ class FileInteractions {
                     let ty = 'image';
                     if (embed.image && embed.image.url.includes('tweet_video_thumb')) {
                         ty = 'gif';
-                    } else if (embed.image && embed.image.url.includes('amplify_video_thumb')) {
+                    } else if (embed.image && (embed.image.url.includes('amplify_video_thumb') || embed.image.url.includes('ext_tw_video_thumb'))) {
                         ty = 'video';
                     }
 
