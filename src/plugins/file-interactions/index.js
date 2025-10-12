@@ -272,6 +272,7 @@ class FileInteractions {
             await this.spawn('ffmpeg', [
                 '-i', filePath,
                 '-vf', 'palettegen',
+                '-y',
                 palettePath
             ]);
             _palettePath = palettePath;
