@@ -974,6 +974,8 @@ class EvalCommand extends OPCommand {
                 if (proto === Command) {
                     this.bot.commander.loadCommand(exported, exported.name);
 
+                    this.bot.commander.sortCommandsByPriority();
+
                     await message.channel.send(`Registered a new command: ${exported.name}`);
                 }
             }
